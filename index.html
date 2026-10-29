@@ -1,0 +1,1089 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mapa de Share KA Ceará</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra de controle fixa no topo; Preencher = lista de clientes + ficha do cliente; Consolidado = KPIs + tabelas de oportunidade */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --surface-2:#f9fafb; --ink:#13202b; --muted:#5a6876; --line:#dde3e9;
+  --accent:#0d5d7d; --accent-ink:#ffffff; --accent-soft:#e2eff5;
+  --good:#1d7a4c; --good-soft:#e3f3ea; --warn:#a96400; --warn-soft:#fbf0dd; --bad:#b0281f; --bad-soft:#fbe7e5;
+  --font-ui:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-num:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141a; --surface:#151d25; --surface-2:#1a232c; --ink:#e5ebf0; --muted:#94a2b0; --line:#28333e;
+  --accent:#5db3d4; --accent-ink:#06202b; --accent-soft:#163240;
+  --good:#4fc48d; --good-soft:#15301f; --warn:#e3a63c; --warn-soft:#33270f; --bad:#f2786d; --bad-soft:#3a1a18;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --surface:#151d25; --surface-2:#1a232c; --ink:#e5ebf0; --muted:#94a2b0; --line:#28333e;
+  --accent:#5db3d4; --accent-ink:#06202b; --accent-soft:#163240;
+  --good:#4fc48d; --good-soft:#15301f; --warn:#e3a63c; --warn-soft:#33270f; --bad:#f2786d; --bad-soft:#3a1a18;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.num,.mono{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding-block:12px}
+.brand{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto}
+.brand h1{font-size:17px;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:0;color:var(--muted);font-size:12.5px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:var(--surface-2);flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);flex:none}
+.status[data-s="saving"] .dot{background:var(--warn)}
+.status[data-s="error"] .dot,.status[data-s="off"] .dot{background:var(--bad)}
+.notice{margin:14px 0 0;padding:10px 12px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink);font-size:13px;border:1px solid var(--line)}
+main{padding-block:16px 48px}
+/* PREENCHER */
+.fill{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px);max-height:calc(100vh - 100px);display:flex;flex-direction:column;min-width:0}
+.list-head{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.list-head input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+.list-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.list ul{list-style:none;margin:0;padding:4px;overflow-y:auto}
+.cli{width:100%;text-align:left;border:0;background:transparent;border-radius:6px;padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px}
+.cli:hover{background:var(--surface-2)}
+.cli[aria-current="true"]{background:var(--accent-soft)}
+.cli .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cli .s{font-size:11.5px;color:var(--muted);grid-column:1}
+.cli .p{grid-row:1/3;grid-column:2;align-self:center}
+.ring{font-family:var(--font-num);font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.ring.part{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.ring.done{background:var(--good-soft);color:var(--good);border-color:transparent}
+.panel{min-width:0;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.chead{padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start}
+.chead .id{min-width:0;flex:1 1 280px}
+.chead h2{margin:0;font-size:19px;letter-spacing:-.01em;text-wrap:balance}
+.chead .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px}
+.fact{display:flex;flex-direction:column}
+.fact .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.fact .v{font-family:var(--font-num);font-weight:600;font-size:15px}
+.nav{display:flex;gap:6px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;font-size:13px;font-weight:500}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.howto{font-size:12.5px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 var(--r) var(--r)}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:minmax(200px,1.3fr) repeat(4,minmax(0,1fr)) 74px minmax(150px,1fr);gap:10px;padding:12px 16px;border-top:1px solid var(--line);align-items:center}
+.row:first-child{border-top:0}
+.grp{padding:8px 16px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:var(--accent-soft);border-top:1px solid var(--line)}
+.grp:first-child{border-top:0}
+.grp + .row{border-top:0}
+.row.nu{opacity:.62}
+.item .in{font-weight:600}
+.item .ir{font-size:11.5px;color:var(--muted)}
+.item .ib{font-size:11.5px;margin-top:3px;color:var(--accent)}
+.item .ib.none{color:var(--muted)}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f span{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.f input{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);min-width:0}
+.f input:focus{background:var(--surface);border-color:var(--accent)}
+.f input:disabled{opacity:.6}
+.f.n input{font-family:var(--font-num);text-align:right}
+.nuc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.calc{font-size:12px;display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.calc .pot{font-family:var(--font-num);font-weight:600}
+.chip{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.neu{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.rowhead{display:grid;grid-template-columns:minmax(200px,1.3fr) repeat(4,minmax(0,1fr)) 74px minmax(150px,1fr);gap:10px;padding:8px 16px;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line)}
+.rowhead + .rows .row:first-child{border-top:0}
+/* CONSOLIDADO */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi .v{font-family:var(--font-num);font-size:24px;font-weight:600;letter-spacing:-.02em}
+.kpi .d{font-size:12px;color:var(--muted)}
+.kpi.hl{border-color:var(--accent);background:var(--accent-soft)}
+.sec{margin-top:20px}
+.sec h3{margin:0 0 2px;font-size:15px}
+.sec .lead{margin:0 0 10px;color:var(--muted);font-size:12.5px;max-width:80ch}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--surface-2)}
+td.r,th.r{text-align:right}
+td.r{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;background:var(--surface-2)}
+.bar{display:inline-block;height:8px;border-radius:4px;background:var(--accent);vertical-align:middle;min-width:2px}
+.empty{padding:22px 16px;color:var(--muted);text-align:center;font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.toolbar p{margin:0;color:var(--muted);font-size:12.5px;max-width:90ch}
+@media (max-width:1180px){
+  .row,.rowhead{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .row .item{grid-column:1/-1}
+  .row .calc{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+  .row .nuc{grid-column:1/-1}
+  .rowhead{display:none}
+}
+@media (max-width:900px){
+  .fill{grid-template-columns:minmax(0,1fr)}
+  .list{position:static;max-height:300px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi .v{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ===== v2: filas de campos, faixa de preenchimento por KA, testes, visões ===== */
+.row{display:block!important;padding:14px 16px;border-top:1px solid var(--line)}
+.row .item{display:flex!important;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:4px 16px;margin-bottom:10px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;align-items:end}
+.f select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);min-width:0;font:inherit;color:inherit}
+.f select:focus{border-color:var(--accent);background:var(--surface)}
+.row .calc{margin-top:10px;display:flex!important;flex-direction:row!important;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.btn.sm{padding:3px 10px;font-size:12px}
+.kastrip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+.kac{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:5px;min-width:0}
+.kac[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.kac .kn{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.kac .kp{font-family:var(--font-num);font-size:20px;font-weight:600;line-height:1.1}
+.kac .kd{font-size:11.5px;color:var(--muted)}
+.meter{height:6px;border-radius:3px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.meter>i{display:block;height:100%;background:var(--accent)}
+.grid-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:14px 16px;align-items:end}
+.grid-form .wide{grid-column:span 2}
+.pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+.pill.agendado{background:var(--accent-soft);color:var(--accent)}
+.pill.realizado{background:var(--warn-soft);color:var(--warn)}
+.pill.aprovado{background:var(--good-soft);color:var(--good)}
+.pill.reprovado,.pill.cancelado{background:var(--bad-soft);color:var(--bad)}
+td select,td input{font:inherit;color:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+td.wrap{white-space:normal;min-width:180px}
+.subtle{font-size:11.5px;color:var(--muted)}
+.itemsec{margin-top:18px}
+.itemhead{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-bottom:8px}
+.itemhead h3{margin:0;font-size:15px}
+.mini{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.mini b{color:var(--ink);font-family:var(--font-num)}
+.hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+.gate .box{max-width:400px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px;display:flex;flex-direction:column;gap:14px}
+.gate h2{margin:0;font-size:20px}.gate p{margin:0;color:var(--muted);font-size:13.5px}
+.gate input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);font:inherit;color:inherit}
+.gate .btn{justify-content:center;padding:10px 14px}
+.gate .or{text-align:center;font-size:12px;color:var(--muted)}
+.gate .msg{font-size:13px;color:var(--accent)}
+.userbox{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.spark{display:inline-flex;align-items:flex-end;gap:2px;height:22px;vertical-align:middle}
+.spark i{display:block;width:7px;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.auto{font-size:12.5px;padding:8px 10px;border-radius:6px;background:var(--good-soft);color:var(--ink);flex:1 1 100%}
+.auto b{color:var(--good)}
+.mapmsg{font-size:12.5px;padding:10px 12px;border-radius:6px;background:var(--bad-soft);color:var(--ink);margin-bottom:10px}
+.mapmsg b{color:var(--bad)}
+.tipline{font-size:11.5px;margin-top:3px;color:var(--muted)}
+.tipline b{color:var(--ink);font-family:var(--font-num)}
+.checks{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.jcbox{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:flex-end}
+.jcbox .f{flex:1 1 260px}
+@media (max-width:900px){.kastrip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kastrip{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-form .wide{grid-column:auto}.kac .kp{font-size:17px}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Mapa de Share KA Ceará</h1>
+      <p>Top 30 clientes de cada carteira · 12 itens, 3 por comprador · compras Praso até 28/10</p>
+    </div>
+    <div class="seg" role="group" aria-label="Visão">
+      <button data-view="fill" aria-pressed="true">Preencher</button>
+      <button data-view="tests" aria-pressed="false">Testes de marca</button>
+      <button data-view="sell" aria-pressed="false">Vendedor</button>
+      <button data-view="buy" aria-pressed="false">Comprador</button>
+      <button data-view="ant" aria-pressed="false">Antecipar</button>
+    </div>
+    <div class="seg" role="group" aria-label="Carteira" id="kaSeg"></div>
+    <div class="seg" role="group" aria-label="Comprador" id="buySeg" hidden></div>
+    <div class="status" id="status" data-s="off"><span class="dot"></span><span id="statusTxt">Conectando…</span></div>
+    <div class="userbox" id="userbox" hidden><span id="userName"></span><button class="btn sm" id="logout">Sair</button></div>
+  </div>
+</header>
+<div class="gate" id="gate" hidden><div class="box">
+  <h2>Mapa de Share KA Ceará</h2>
+  <p>Entre com o seu e-mail da Praso (@praso.com.br) para ver e preencher o painel.</p>
+  <button class="btn primary" id="gGoogle">Entrar com Google</button>
+  <div class="or">ou receba um link de acesso por e-mail</div>
+  <input id="gEmail" type="email" placeholder="seu.nome@praso.com.br" autocomplete="email">
+  <button class="btn" id="gLink">Enviar link de acesso</button>
+  <div class="msg" id="gMsg"></div>
+</div></div>
+<main class="wrap">
+  <div id="notice" class="notice" hidden></div>
+  <div class="kastrip" id="kastrip" aria-label="Preenchimento por KA"></div>
+  <section id="view-fill" class="fill" style="margin-top:14px">
+    <aside class="list" aria-label="Clientes">
+      <div class="list-head">
+        <input id="q" type="search" placeholder="Buscar cliente, CNPJ ou grupo" autocomplete="off">
+        <div class="list-meta"><span id="listCount"></span><span id="listDone"></span></div>
+      </div>
+      <ul id="cliList"></ul>
+    </aside>
+    <div class="panel" id="panel"></div>
+  </section>
+  <section id="view-tests" hidden></section>
+  <section id="view-sell" hidden></section>
+  <section id="view-buy" hidden></section>
+  <section id="view-ant" hidden></section>
+</main>
+<datalist id="dl-forn"></datalist>
+<datalist id="dl-sabor"></datalist>
+<div id="dls"></div>
+<script>
+/* ===== Base (Metabase, 28/10/2026): top 30 por receita média 3m de cada KA no CE; compras na Praso = média mensal dos últimos 90 dias, todas as variações do item somadas ===== */
+const KAS={icaroka:"Ícaro",vitorka:"Vitor",marioka:"Mário",ioneideka:"Ioneide"};
+const KA_ORDER=["icaroka","vitorka","marioka","ioneideka"];
+const BUYERS=["Tereza","Diogo","João Neto","José Felipe"];
+// 12 itens = 3 por comprador. price = R$ por unidade de medida (kg, L ou lata) da referência. pb = marcas que a Praso tem no CE
+const SKUS=[
+ {code:"chocolate",buyer:0,nome:"Barra de chocolate / cobertura",var:"barra, fracionada ou gotas",ref:"Garoto ao leite · barra 2,1 kg",u:"kg",price:66.66,pb:["Garoto","Melken Harald","Sicao","Galak","Selecta","TOP Harald","Confeiteiro Harald"]},
+ {code:"creme_leite",buyer:0,nome:"Creme de leite",var:"caixinha, lata ou 1 kg",ref:"Cemil 20% · caixinha 200 g",u:"kg",price:18.45,pb:["Cemil","Italac","CCGL","Natville","Nestlé","Itambé","Betânia"]},
+ {code:"leite_cond",buyer:0,nome:"Leite condensado",var:"caixinha, lata ou bag",ref:"CCGL · caixinha 395 g",u:"kg",price:17.70,pb:["CCGL","Natville","Cemil","Itambé","Italac","Betânia","Moça"]},
+ {code:"gorgonzola",buyer:1,nome:"Queijo gorgonzola",var:"peça ou creme",ref:"Quatá · peça ≈3,2 kg",u:"kg",price:83.99,pb:["Quatá"]},
+ {code:"ketchup_sache",buyer:1,nome:"Ketchup em sachê",var:"qualquer gramatura de sachê",ref:"Heinz · caixa 144 × 7 g",u:"kg",price:28.13,pb:["Heinz","Cepêra","Fugini","Bonare"]},
+ {code:"oleo_misto",buyer:1,nome:"Óleo misto / composto",var:"galão ou garrafa",ref:"Quinta do Viseu 30% · galão 5,01 L",u:"L",price:16.54,pb:["Quinta do Viseu","Santa Isabel","Sinhá"]},
+ {code:"batata",buyer:2,nome:"Batata pré-frita congelada",var:"palito, rústica, crinkle etc.",ref:"Newbraz 7 mm · pacote 2 kg",u:"kg",price:16.45,pb:["Newbraz"]},
+ {code:"panko",buyer:2,nome:"Farinha panko",var:"qualquer embalagem",ref:"Romariz · pacote 1 kg",u:"kg",price:22.99,pb:["Romariz","Karui","Orquídea","Yumart"]},
+ {code:"red_bull",buyer:2,nome:"Energético Red Bull",var:"lata 250 ml, todos os sabores",ref:"Red Bull tradicional · lata 250 ml",u:"lata",price:8.69,pb:["Red Bull"]},
+ {code:"coxao_mole",buyer:3,nome:"Coxão mole bovino",var:"peça ou porcionado",ref:"Plena · peça ≈10,4 kg",u:"kg",price:42.39,pb:["Plena","Valencio","1953","Friboi","Minerva","Masterboi","Mafrinorte"]},
+ {code:"cupim",buyer:3,nome:"Cupim bovino",var:"peça A ou B",ref:"Masterboi · peça ≈1,9 kg",u:"kg",price:34.99,pb:["Masterboi","Frigol","Friboi","Minerva","Valencio"]},
+ {code:"bacon",buyer:3,nome:"Bacon",var:"manta, cubos ou fatiado",ref:"Pamplona em cubos · 1 kg",u:"kg",price:29.99,pb:["Pamplona","Rezende","Seara","Frimesa","Perdigão"]}
+];
+const RB=8;
+const SABORES=["Tradicional","Zero","Sugarfree","Melancia","Tropical","Açaí","Pitaya","Pêssego","Coco e açaí"];
+const TROCA=[["sim","Aceita trocar"],["teste","Aceita testar"],["nao","Não troca"]];
+const TROCA_L=Object.fromEntries(TROCA);
+const STATUS=[["agendado","Agendado"],["realizado","Realizado, aguardando"],["aprovado","Aprovado, trocou"],["reprovado","Não aprovou"],["cancelado","Cancelado"]];
+const STATUS_L=Object.fromEntries(STATUS);
+const OPEN_ST=new Set(["agendado","realizado"]);
+// [customer_id, ka, cnpj, nome fantasia, razão social, grupo, tipologia, receita média 3m, dias desde última compra]
+const RAW=[
+["6238728356013","icaroka","19293262000110","SERLARES","SRL REFEICOES COLETIVAS LTDA","SERLARES","Cozinha Industrial",127634,1],
+["6266965393581","icaroka","35229640000152","FROSTY","FROSTY PRODUTOS ALIMENTICIOS LTDA","","Cozinha Industrial",123640,13],
+["6458177585325","icaroka","18797391000182","ADRIANO FRIOS","ADRIANO PEREIRA PONTE LTDA","","Distribuidor",79000,7],
+["8067896443053","icaroka","11834001000158","JB FRIOS","JOAO BOSCO CAVALCANTE SOUZA","","Distribuidor",76036,6],
+["5977527484589","icaroka","01297579000169","BEBELU SANDUICHES","RIOS E FROTA ALIMENTOS LTDA","BEBELU","Cozinha Industrial",42346,0],
+["9541068849325","icaroka","37262943000100","JOAO DO BOLO","JOAO DO BOLO LTDA","JOAO DO BOLO","Doces e Confeitaria",41070,2],
+["7257382518957","icaroka","54808580000177","MINI SALGADOS DOM PEDRO","J DA S FERREIRA SALGADOS","MINI SALGADOS","Lanches e Salgados",27907,44],
+["6455908171949","icaroka","10470850000107","EMPORIO BROWNIE","M.A BARROSO LTDA","","Cafeteria",26397,0],
+["7303730888877","icaroka","54890193000122","","JOSE FABRICIO DA SILVA JUNIOR LTDA","","Pizzaria",25808,7],
+["5980508389549","icaroka","41551243000103","PANIFICADORA SANTA CLARA","TARCISO MARTINS FILHO EIRELI","","Padaria",25325,2],
+["9752877203629","icaroka","53900323000106","MINI SALGADOS BOM JARDIM","FG SALGADOS NO PONTO LTDA","MINI SALGADOS","Lanches e Salgados",24063,29],
+["9565618602157","icaroka","37262943000283","JOAO DO BOLO CONCEITO","JOAO DO BOLO LTDA","JOAO DO BOLO","Doces e Confeitaria",19482,1],
+["7325218996397","icaroka","33115521000143","","3J SERVICOS LTDA","","Cozinha Contemporânea",17266,0],
+["8890142621869","icaroka","09188784000440","","TORTELE ALIMENTOS LTDA","","Doces e Confeitaria",16735,2],
+["6201784565933","icaroka","40273907000149","DR. DOCES","D. R. S. BARROS","","Doces e Confeitaria",16257,7],
+["6027263869101","icaroka","24107697000162","HAPPY WS","RAIZ COMERCIO DE ALIMENTOS LTDA","RAIZ","Cozinha Contemporânea",16056,2],
+["6252805750957","icaroka","08923128000139","MURANO GRILL","MURANO GRILL COMERCIO DE ALIMENTOS LTDA","","Cozinha Contemporânea",16047,3],
+["10090234773677","icaroka","67714240000129","COMPLEXO MOACAS CARNES E MASSAS","COMPLEXO MOACAS LTDA","MOACAS","À la carte Brasileiro",15539,22],
+["6006221766829","icaroka","44356587000141","RESTAURANTE RAIZ","SAUCE COMERCIO DE ALIMENTOS LTDA","RAIZ","Pizzaria",15388,5],
+["7074824781997","icaroka","53900323000106","MINI SALGADOS BOM JARDIM","JG CASA DO SALGADO LTDA","MINI SALGADOS","Lanches e Salgados",15144,9],
+["6182770081965","icaroka","30282506000100","","NAG RESTAURANTE E EVENTOS LTDA","","À la carte Brasileiro",14851,5],
+["5975359815853","icaroka","28046882000145","MENU BRANDS ALDEOTA","MENU BRANDS EIRELI","MENU BRANDS","Cozinha Industrial",14481,1],
+["9476595417261","icaroka","63845195000190","","MAISQBOM BOLOS LTDA","MAIS QUE BOM","Doces e Confeitaria",14426,7],
+["6181643813037","icaroka","30620779000109","SOBOLO","SOBOLO PADARIA E CONFEITARIA LTDA","SO BOLO","Doces e Confeitaria",13385,2],
+["5966230159533","icaroka","09526442000140","ILLA MARE","GRELHAS RESTAURANTE LTDA","ILLA MARE","Cozinha Contemporânea",12454,0],
+["7831757062317","icaroka","55851470000150","LALI BOLOS","LALI BOLOS PADARIA E CONFEITARIA LTDA","","Cafeteria",12420,2],
+["7376051732653","icaroka","36775854000197","DIVINA MASSAS","EDINALDA ALVES GALDINO","","Italiano e Massas",11967,1],
+["9785156206765","icaroka","31006488000350","PAINE PRODUCAO ARTESANAL","PAINE PRODUCAO E COMERCIO DE PAES ARTESANAIS LTDA","PAINE","Cafeteria",11879,5],
+["6181488394413","icaroka","47583689000198","SOBOLO","SOBOLO BEZERRA PADARIA LTDA","SO BOLO","Doces e Confeitaria",11799,2],
+["10120154775725","icaroka","67619504000165","","LANLAN INDUSTRIA E COMERCIO LTDA","LANLAN","Lanches e Salgados",11354,5],
+["6082670887085","ioneideka","73446890000133","","COSTA MENDES DELICATESSEN PANIFICACAO E CONFEITARIA LTDA","COSTA MENDES","Padaria",69050,2],
+["8555262771373","ioneideka","55998193000103","BAR DE PRAIA","BEACH BAR HOST CE7 LTDA","GRUPO HOST","Bar e Petiscos",43887,1],
+["6261927477421","ioneideka","01737917000136","REGINA DIOGENES","LJ RESTAURANTE LTDA","","Cozinha Contemporânea",37374,1],
+["6657250230445","ioneideka","33774660000189","GUSTO REFEICOES","RDA COMERCIO DE REFEICOES E ALIMENTOS LTDA","","Marmitaria",36391,2],
+["5980568486061","ioneideka","04027102000232","VILA GALE CUMBUCO","VILA GALE BRASIL - ATIVIDADES HOTELEIRAS LTDA","","Hotel e Pousada",35565,2],
+["8498958205101","ioneideka","04027102001123","","VILA GALE BRASIL - ATIVIDADES HOTELEIRAS LTDA","","Hotel e Pousada",33909,9],
+["7079425540269","ioneideka","35011221000140","","ERICO NANTUA MOREIRA 88133362334","","Doces e Confeitaria",33041,6],
+["6084834197677","ioneideka","23957787000260","NOELIA DOCES E SALGADOS","FONTENELLE INDUSTRIA E COMERCIO DE ALIMENTOS LTDA","NOELIA DOCES E SALGADOS","Cafeteria",26161,2],
+["6327961256109","ioneideka","12369179000308","FAZENDINHA","JUBAIA COMERCIAL DE PRODUTOS ALIMENTICIOS LTDA","","Padaria",23227,6],
+["8688624992429","ioneideka","56046831000159","","COSTA MENDES FOOD LTDA","COSTA MENDES","Cozinha Industrial",22324,1],
+["6713867010221","ioneideka","12369179000480","","JUBAIA COMERCIAL DE PRODUTOS ALIMENTICIOS LTDA","","Padaria",20805,6],
+["6027670028461","ioneideka","01609661000181","O REI DA PICANHA","MONTEIRO & PRADO LTDA","ASSIS O REI DA PICANHA","Churrascaria e Espetos",18528,5],
+["5981986750637","ioneideka","12959723000100","","COCO BAMBU SUL PIZZARIA LTDA","COCO BAMBU","Frutos do Mar",18427,6],
+["5982039343277","ioneideka","19253187000163","CARMEL WIND ESPORTE","CARMEL WIND RESORT LTDA","CARMEL HOTEIS","Hotel e Pousada",18088,9],
+["10072918491309","ioneideka","67512570000131","DINDIN GOURMET MEU PREFERIDO","DINDIN MEU PREFERIDO LTDA","","Açaí e Sorvetes",14987,2],
+["5981987307693","ioneideka","04462689000127","COCO BAMBU","COCO BAMBU PIZZARIA LTDA","COCO BAMBU","Frutos do Mar",14966,7],
+["6714519617709","ioneideka","41372539000159","JANGADEIRO RESTAURANTE","L C COMERCIO DE ALIMENTOS LTDA","","Hotel e Pousada",14832,1],
+["6236938305709","ioneideka","27794852000154","","CARMEL RESORT HOSPEDAGEM LTDA","CARMEL HOTEIS","Hotel e Pousada",13936,6],
+["5980894298285","ioneideka","04027102000151","","VILA GALE BRASIL - ATIVIDADES HOTELEIRAS LTDA","","Hotel e Pousada",13640,8],
+["8454242795693","ioneideka","53440771000166","CASA BLANCA HOTEL","REDE ANDRADE CASA BLANCA HOTEL LTDA","","Hotel e Pousada",13040,0],
+["6218264608941","ioneideka","63353015000153","DOM PASTEL","DOM PASTEL ALIMENTOS LTDA","COCO BAMBU","Frutos do Mar",12731,2],
+["6385324425389","ioneideka","05369350000143","","FIUZA E GUALBERTO LTDA","LA MAISON","Catering, Buffet e Eventos",12295,1],
+["5996538331309","ioneideka","42221951000130","","COMERCIAL BOAMA DE ALIMENTOS LTDA","","Cozinha Industrial",11853,9],
+["5982068408493","ioneideka","08967872000135","","COCO BAMBU FRUTOS DO MAR COMERCIO DE ALIMENTOS LTDA","COCO BAMBU","Frutos do Mar",11744,1],
+["5982037737645","ioneideka","27708448000110","CARMEL TAIBA EXCLUSIVE RESORT","CARMEL TAIBA EXCLUSIVE RESORT HOTEIS LTDA","CARMEL HOTEIS","Hotel e Pousada",11455,5],
+["5982904877229","ioneideka","02419765002725","","HOTELARIA ACCORINVEST BRASIL S.A","","Hotel e Pousada",10849,12],
+["8436919238829","ioneideka","48557179000109","KORALI RESTAURANTE","KORALI RESTAURANTE LTDA","","Hotel e Pousada",10784,1],
+["6061620920493","ioneideka","43391996000116","GALETERIA CENTRAL","ANTONIA FRANCISCA ROLIM GALETERIA","","Churrascaria e Espetos",10629,33],
+["6238525063341","ioneideka","23539473000167","BARRACA ATLANTIDZ","MICHELLY LANDIN LASAGNO RESTAURANTE","","Barraca de Praia",10482,2],
+["7255874306221","ioneideka","54950220000105","","LNT SERVICOS E ALIMENTOS LTDA","","À la carte Brasileiro",9840,2],
+["6770928844973","marioka","49730399000155","ALICATE GRILL","ALICATE GRILL CHURRASCARIA LTDA","ALICATE","Churrascaria e Espetos",68176,0],
+["9002677633197","marioka","62524985000101","SO MACARRAO","SO MACARRAO LTDA","","Italiano e Massas",66813,0],
+["9906865569965","marioka","65081629000159","","HOLY PIZZA PARQUELANDIA LTDA","","Pizzaria",56044,7],
+["6550928064685","marioka","26333923000159","SR BATATA","DENIS WILLIAN CAMARA FERREIRA","","Pizzaria",48893,1],
+["8174582956205","marioka","55652609000137","N1CHICKEN FORTALEZA","MC GASTRONOMIA DELIVERY LTDA","BRASILEIRINHO DELIVERY","Cozinha Contemporânea",30797,1],
+["6007799120045","marioka","05369717000129","PLUS","PLUS CRECHE, RESTAURANTE E ENTRETENIMENTO LTDA","COCO BAMBU","Catering, Buffet e Eventos",29888,7],
+["6181552226477","marioka","42501852000102","SABORESCO BY VANNUCCE","VANNUCCE E. O. SANTOS LTDA","","Pizzaria",28533,1],
+["6178618998957","marioka","10878803000105","PASTO & PIZZAS","EMPORIO DAS MASSAS COMERCIO DE ALIMENTOS EIRELI","PASTO & PIZZA","Pizzaria",23946,6],
+["9371339161773","marioka","40071394000193","MARIAS PANIFICACAO","MARIAS PANIFICACAO INDUSTRIA E COMERCIO LTDA","","Padaria",23938,14],
+["8738048901293","marioka","60161447000174","","NINA DOCERIA LTDA","","Doces e Confeitaria",23392,8],
+["6395606204589","marioka","20334416000153","AUSTIN PUB","AUSTIN EMPREENDIMENTOS ARTISTICOS E GASTRONOMICOS LTDA","AUSTIN","Bar e Petiscos",22247,2],
+["6512511811757","marioka","20274514000142","CLUBE DA PIZZA","CLUBE DA PIZZA - COMERCIO DE ALIMENTOS LTDA","","Pizzaria",21319,2],
+["6168993956013","marioka","73543001000156","PASTO & PIZZAS","ZAE RESTAURANTE LTDA","PASTO & PIZZA","Pizzaria",19353,1],
+["6430561108141","marioka","37583367000195","MAMMO RESTAURANTE","MAMMO RESTAURANTE LTDA","CASUAL","Cozinha Contemporânea",18421,6],
+["6572307185837","marioka","30132749000153","TWO BROTHERS","TWO BROTHERS EMPREENDIMENTOS ALIMENTICIOS LTDA","TWO BROTHERS","Pizzaria",18144,2],
+["6011711160493","marioka","20699615000165","BILL SFIHA","GILSON PAULO DE ANDRADE","","Pizzaria",17980,6],
+["6045354295469","marioka","41400995000165","CHURRASCARIA REGINALDO","CHURRASCARIA REGINALDO LTDA","ALICATE","Churrascaria e Espetos",17221,13],
+["5977434947757","marioka","28043920000106","TWO BROTHERS","TWO BROTHERS EMPREENDIMENTOS LTDA","TWO BROTHERS","Pizzaria",16676,2],
+["5973608825005","marioka","36558953000117","ZAIKO SUSHI","ZAIKO SUSHI LTDA","","Japonês, Chinês e Asiático",16070,2],
+["10224593273005","marioka","67931365000100","","CARNEIRO DO ORDONES MESSEJANA LTDA","ORDONES","À la carte Brasileiro",14199,1],
+["6369052000429","marioka","41488924000166","CORTILE RISTORANTE","CORTILE RISTORANTE LTDA","OE","Cozinha Contemporânea",13949,1],
+["10146216116397","marioka","42223500000132","NATIVAS GRILL","NATIVAS GRILL FORTALEZA LTDA","GRUPO NATIVAS JP","Bar e Petiscos",13711,2],
+["6685502636205","marioka","36842494000107","NALU PIZZAS","LETICIA GONCALVES PEIXOTO","NALU PIZZAS","Pizzaria",13525,2],
+["8926085644461","marioka","08754146000568","CC VIGNOLI","VIGNOLI RESTAURANTES LTDA","VIGNOLI","Italiano e Massas",12978,1],
+["7127019258029","marioka","01434589000107","CHRISTUS","APEL ATIVIDADES PRO ENSINO LTDA","","Educação",12812,2],
+["6181910642861","marioka","07342541000147","JP STEAKHOUSE","P L J BAR E CHURRASCARIA LTDA","GRUPO NATIVAS JP","Churrascaria e Espetos",12701,2],
+["6182738165933","marioka","38320232000108","NATIVAS GRILL","CHURRASCARIA NATIVAS GRILL FORTALEZA LTDA","GRUPO NATIVAS JP","Churrascaria e Espetos",12685,12],
+["9662789353645","marioka","62760465000106","NBS BURGER","EFT COMERCIO DE ALIMENTOS LTDA","NBS","Hamburgueria",11318,0],
+["7440427122861","marioka","21973663000162","BROCADO PIZZARIA","R F R FROTA PIZZARIA","","Pizzaria",10704,7],
+["5975483842733","marioka","06916178000163","","CARNEIRO DO ORDONES ORIGINAL LTDA","ORDONES","Churrascaria e Espetos",9723,29],
+["10065951195309","vitorka","34314437002246","","QUALITIES REFEICOES INDUSTRIAL LTDA","","Cozinha Industrial",68853,5],
+["5980874047661","vitorka","27739399000183","BDV COMERCIO DE ALIMENTOS","Bdv Comercio de Alimentos LTDA","","Cozinha Contemporânea",63904,1],
+["9516369445037","vitorka","61788441000194","ENTRE AMIGOS FORTALEZA","GEA2 RETAURANTE E BAR LTDA","","À la carte Brasileiro",40478,1],
+["6359829348525","vitorka","33888741000290","","PADUA RESTAURANTES LTDA","TIO ARMENIO","Cozinha Contemporânea",36825,6],
+["6394784546989","vitorka","40562625000161","NOSTRA GULA","GRAYCE CARNEIRO GOMES DE ARAUJO COLARES","NOSTRA GULA","Cafeteria",33690,7],
+["5976573182125","vitorka","11696355000183","FLORESTA GOURMET","FLORESTA RESTAURANTES LTDA","FLORESTA","Self-service e Quilo",24508,2],
+["6544034791597","vitorka","21977784000182","SPETTUS DO PAIVA","FRANCISCA GESSIANE CAETANO FARIAS FERREIRA","PAIVA GRILL","Bar e Petiscos",22915,3],
+["5976017666221","vitorka","24916738000161","DEPOT MEDIEVAL","ROBBIT COMERCIO DE ALIMENTOS EIRELI","","Pizzaria",20657,64],
+["6323675136173","vitorka","04956357000107","CHURRASCARIA JOAO FILHO","CHURRASCARIA JOAO FILHO LTDA","CHURRASCARIA JOAO FILHO","Churrascaria e Espetos",20580,6],
+["6623487983789","vitorka","04735487000101","KINA DO FEIJAO VERDE","RESTAURANTE KINA DO FEIJAO VERDE LTDA","KINA DO FEIJAO VERDE","Churrascaria e Espetos",19979,1],
+["6006021685421","vitorka","18429519000155","TEXAS GRILL STEAK HOUSE","TEXAS GRILL RESTAURANTE LTDA","","Churrascaria e Espetos",18716,2],
+["5977505202349","vitorka","34756620000177","AZILADOS","EVG JUNIOR RESTAURANTES LTDA","AZILADOS","Lanches e Salgados",18524,1],
+["8686714323117","vitorka","54327220000153","","DEPOT MEIRELES COMERCIO DE ALIMENTOS LTDA","","Pizzaria",18467,27],
+["7344233087149","vitorka","22045155000187","PETIT BISTROT","PETIT BISTROT RESTAURANTE LTDA","","Cozinha Contemporânea",17121,1],
+["7344248750253","vitorka","44380865000104","PETIT JARDIN RESTAURANTE","ANTONIA ALINE ALVES DA SILVA","","Hotel e Pousada",16626,2],
+["9014872047789","vitorka","52328292000190","JANELA DO ARMAZEM - ALDEOTA","LC PARTICIPACOES LTDA","","Lanches e Salgados",16590,2],
+["6417014784173","vitorka","18996125000189","RESTAURANTE PE DE SERRA","RENAN SILVA UCHOA","GRUPO PE DE SERRA","Churrascaria e Espetos",16496,1],
+["6457287934125","vitorka","11329752000117","PULCINELLA","MAISON D'OR COMERCIO ALIMENTICIO LTDA","PULCINELLA","Italiano e Massas",15655,1],
+["5975648141485","vitorka","00782468000185","PICANHA DO ALEMAO","CASA DO CHURRASCO LTDA","PICANHA DO ALEMAO","Churrascaria e Espetos",15110,0],
+["6173798301869","vitorka","04824968000274","SKINA DO BAIAO II","CHURRASCARIA E LANCHONETE SKINA DO BAIAO I LTDA","SKINA DO BAIAO","Churrascaria e Espetos",15071,1],
+["6544025813165","vitorka","31677295000169","PAIVA GRILL","PAIVA GRILL RESTAURANTES LTDA","PAIVA GRILL","Churrascaria e Espetos",14892,3],
+["6137947947181","vitorka","29860742000179","CHURRASCARIA POTIGUAR","POTIGUAR RESTAURANTE EIRELI","","Churrascaria e Espetos",14180,5],
+["8727268655277","vitorka","29048059000727","","FOME FOOD LANCHONETE LTDA","","Lanches e Salgados",13510,1],
+["6020730454189","vitorka","23749946000150","RAUFE S","RAUFE S COMERCIO DE ALIMENTOS LTDA","","À la carte Brasileiro",13307,2],
+["6483144442029","vitorka","46699488000198","FABRICA BURGER","TDL COM. DE ALIMENTOS E BEBIDAS LTDA","","Hamburgueria",13225,2],
+["8941490307245","vitorka","54483437000152","MUVUCO","MUVUCO BOTECO DO MAR LTDA","","À la carte Brasileiro",12375,1],
+["7509943615661","vitorka","09215353000264","DUDAS BURGER","DUDAS BURGER INDUSTRIA E COMERCIO DE PANIFICACAO LTDA","PADARIA ROMANA","Padaria",12348,7],
+["9788114632877","vitorka","32513288000941","","B D M BARES E RESTAURANTES LTDA","","À la carte Brasileiro",11992,5],
+["5980903243949","vitorka","29274943000194","GRAND' PARRILHA","Grand Parrilha Cozinha Eireli","","À la carte Brasileiro",11590,2],
+["6498740076717","vitorka","26995428000105","ORGANICO","GRUPO ORGANICO ALIMENTOS SAUDAVEIS LTDA","","Self-service e Quilo",11388,2]
+];
+// Compras na Praso (BigQuery, 28/10/2026), todas as variações somadas, por janela de 30 dias: cliente -> [[item, 91-120d, 61-90d, 31-60d, últimos 30d, R$ médio/unidade nos 90d]]
+const TR={
+"10065951195309":[[1,0.0,0.0,0.0,1.0,15.83],[5,0.0,12.0,5.0,24.0,21.32],[9,0.0,0.0,10.4,0.0,41.41],[10,0.0,0.0,1453.0,678.8,21.08]],"10072918491309":[[1,108.0,0.0,513.0,648.0,17.52],[2,0.0,1066.5,959.9,959.9,17.64]],"10090234773677":[[1,58.1,174.2,116.1,0.0,12.7],[4,12.3,0.0,35.3,0.0,22.58],[10,0.0,0.0,71.5,39.7,35.15]],
+"10120154775725":[[7,60.0,0.0,0.0,0.0,null]],"10146216116397":[[2,0.0,0.0,0.0,21.3,16.94],[6,0.0,0.0,0.0,4.5,14.38],[7,0.0,0.0,0.0,20.0,16.49],[11,0.0,0.0,0.0,9.7,38.45]],"10224593273005":[[0,0.0,0.0,16.2,0.0,90.09],[2,0.0,40.0,90.1,0.0,20.26],[5,0.0,10.0,90.2,20.0,16.54],[7,0.0,0.0,40.4,0.0,16.82],[8,0.0,0.0,84.0,0.0,8.68]],
+"5966230159533":[[0,38.4,16.2,8.2,14.2,83.1],[5,0.0,0.0,0.0,35.1,16.54],[7,30.0,20.0,15.1,40.0,16.34],[8,36.0,0.0,66.0,126.0,8.56],[9,0.0,62.4,0.0,52.5,40.29],[10,0.0,45.6,0.0,51.6,36.15]],"5973608825005":[[0,0.0,2.0,1.0,0.0,90.09],[2,11.1,32.4,11.1,21.7,16.62],[6,6.0,2.0,3.0,0.0,16.12],[7,0.0,0.0,15.0,0.0,22.99],[8,4.0,4.0,4.0,8.0,8.56]],"5975359815853":[[2,15.0,50.0,30.0,0.0,17.23],[5,20.1,0.0,0.0,0.0,null],[6,0.0,24.0,16.5,0.0,15.9],[7,230.0,2.0,73.7,0.0,16.82],[11,0.0,0.0,0.0,23.4,25.73]],
+"5975648141485":[[5,10.0,0.0,0.0,5.0,16.54],[11,7.5,6.0,0.0,14.7,28.89]],"5976017666221":[[2,435.6,380.0,0.0,0.0,17.2]],"5976573182125":[[1,0.0,5.8,0.0,5.8,12.51],[6,90.0,50.0,0.0,4.5,16.27],[7,30.0,250.0,50.0,10.0,15.72],[8,0.0,0.0,48.0,0.0,8.69]],
+"5977434947757":[[7,0.0,0.0,0.0,4.0,16.49],[11,0.0,0.0,4.5,19.5,38.45]],"5977505202349":[[2,0.0,0.0,2.5,2.4,23.12],[7,0.0,0.0,0.0,3.0,19.99],[8,0.0,22.0,0.0,0.0,8.69],[10,0.0,18.1,83.7,0.0,25.96]],"5977527484589":[[6,0.0,0.0,0.0,420.0,13.96],[11,0.0,213.9,0.0,0.0,32.16]],
+"5980508389549":[[0,10.1,10.1,4.0,0.0,35.35],[1,0.0,0.0,12.1,0.0,16.82],[4,2.0,2.0,3.0,4.0,27.24],[6,0.0,0.0,18.0,24.0,16.08],[10,0.0,0.0,0.0,25.2,35.62],[11,0.0,0.0,7.8,21.8,36.49]],"5980568486061":[[0,228.8,0.0,91.2,40.3,68.21],[3,0.0,0.0,0.0,16.0,77.02]],"5980874047661":[[0,32.9,38.8,32.5,60.2,68.84],[1,3.0,3.0,0.0,0.0,17.81],[2,45.0,0.0,5.0,0.0,18.45],[4,0.0,0.0,4.0,5.0,26.8],[7,0.0,0.0,0.0,5.0,22.99],[8,0.0,0.0,0.0,4.0,8.69],[10,0.0,9.5,0.0,2.1,34.96],[11,24.9,15.0,18.7,26.0,30.73]],
+"5980894298285":[[0,0.0,0.0,12.1,0.0,95.04]],"5980903243949":[[0,32.3,35.3,57.6,46.5,93.56],[2,10.0,0.0,0.0,0.0,null]],"5981986750637":[[1,0.0,0.0,0.0,17.0,25.4],[2,0.0,37.9,0.0,0.0,30.35],[6,0.0,0.0,0.0,90.0,13.49],[10,23.1,0.0,0.0,0.0,null],[11,0.0,0.0,0.0,36.0,51.99]],
+"5981987307693":[[1,149.4,102.0,82.1,0.0,28.22],[6,0.0,0.0,0.0,112.5,13.6],[7,30.0,0.0,20.0,0.0,22.99],[11,0.0,0.0,0.0,10.0,51.99]],"5982037737645":[[0,13.1,0.0,20.2,0.0,90.09],[1,43.0,0.0,0.0,5.8,12.05],[7,0.0,0.0,30.0,0.0,22.99],[8,108.0,0.0,0.0,0.0,null]],"5982039343277":[[0,30.3,40.4,10.1,20.2,95.46],[5,0.0,60.2,0.0,100.2,17.03]],
+"5982068408493":[[1,83.2,0.0,0.0,0.0,null],[6,0.0,0.0,0.0,90.0,13.69],[11,0.0,0.0,0.0,10.0,51.99]],"5982904877229":[[2,35.0,40.1,0.0,35.0,17.38],[6,0.0,40.0,0.0,0.0,14.49],[7,2.0,5.0,10.0,5.0,16.29],[8,0.0,0.0,48.0,0.0,8.69],[9,0.0,0.0,67.5,0.0,43.86],[11,4.7,0.0,0.0,0.0,null]],"5996538331309":[[10,0.0,600.4,0.0,0.0,34.94]],
+"6006021685421":[[5,0.0,0.0,5.0,5.0,17.2],[6,0.0,0.0,34.0,20.0,12.26],[7,11.0,5.0,7.0,6.0,21.66],[8,10.0,5.0,5.0,6.0,8.69],[11,14.0,14.5,14.3,0.0,25.81]],"6006221766829":[[11,6.5,0.0,0.0,9.5,45.54]],"6007799120045":[[0,0.0,0.0,0.0,28.3,86.13],[1,0.0,0.0,85.0,0.0,28.22]],
+"6011711160493":[[0,124.2,0.0,0.0,0.0,null],[11,0.0,0.0,0.6,0.0,38.45]],"6020730454189":[[6,0.0,10.0,0.0,0.0,16.45],[10,0.0,23.1,0.0,23.8,34.5]],"6027263869101":[[0,1.0,0.0,2.0,0.0,27.71],[7,10.0,10.0,42.2,12.0,17.03],[9,11.5,0.0,0.0,0.0,null],[10,0.0,0.0,0.0,11.9,33.09]],
+"6082670887085":[[4,0.0,4.0,0.0,0.0,28.12]],"6084834197677":[[1,0.0,0.0,0.0,12.1,15.83],[5,0.0,0.0,0.0,10.0,16.54],[11,0.0,0.0,31.2,0.0,24.44]],"6168993956013":[[0,0.0,2.0,0.0,0.0,37.07],[3,0.0,0.0,0.0,19.2,77.55],[7,0.0,0.0,6.1,0.0,16.82]],
+"6178618998957":[[5,0.0,0.0,0.0,15.0,16.54],[6,0.0,0.0,21.0,0.0,18.66],[7,0.0,0.0,0.0,7.0,16.49],[8,0.0,0.0,2.0,5.0,8.49]],"6181488394413":[[0,20.8,16.3,24.7,39.6,59.29],[2,0.0,0.0,10.7,0.0,18.71]],"6181552226477":[[0,63.0,84.0,84.0,130.2,67.33],[1,24.0,90.0,59.4,64.8,17.48],[2,0.0,33.2,66.4,0.0,17.78],[10,0.0,4.2,0.0,0.0,31.65]],
+"6181643813037":[[0,2.2,8.2,2.1,6.3,60.06]],"6181910642861":[[7,15.0,0.0,0.0,0.0,null]],"6182738165933":[[7,10.0,40.0,0.0,0.0,15.69],[11,0.0,9.7,13.0,0.0,38.45]],
+"6182770081965":[[0,0.0,6.1,11.1,2.0,39.7],[2,0.0,0.0,0.0,42.7,16.43],[7,6.0,4.0,0.0,0.0,15.69],[8,0.0,30.0,0.0,0.0,8.49],[10,52.5,0.0,0.0,0.0,null]],"6201784565933":[[0,0.0,135.1,82.7,41.0,42.88]],"6218264608941":[[6,0.0,0.0,0.0,51.8,13.49],[11,0.0,0.0,0.0,20.0,51.99]],
+"6236938305709":[[0,0.0,20.2,0.0,10.1,79.2],[1,0.0,0.0,0.0,50.0,44.99],[7,10.0,0.0,0.0,0.0,null]],"6238525063341":[[0,0.0,0.0,1.0,0.0,29.4],[2,0.0,10.0,5.0,0.0,17.4],[3,0.0,0.0,1.0,0.0,56.99],[4,2.2,3.2,1.0,0.0,23.58],[5,15.0,5.0,20.0,10.0,16.73],[6,0.0,10.0,0.0,0.0,16.45],[7,0.0,10.0,60.0,70.0,22.06],[8,48.0,0.0,0.0,0.0,null],[10,0.0,0.0,4.0,0.0,10.7],[11,14.8,14.0,0.0,12.8,34.33]],"6238728356013":[[1,23.2,0.0,0.0,0.0,null],[2,106.7,0.0,0.0,0.0,null],[5,50.0,148.0,0.0,371.0,21.98],[8,174.0,204.0,191.0,672.0,8.6],[10,1490.2,571.2,0.0,2457.4,36.0],[11,0.0,168.3,0.0,0.0,28.68]],
+"6252805750957":[[0,0.0,3.0,0.0,0.0,35.63],[2,32.0,10.7,0.0,0.0,16.94],[5,0.0,0.0,20.0,0.0,16.54],[6,14.0,0.0,0.0,0.0,null],[7,0.0,4.0,10.0,0.0,22.99],[11,0.0,0.0,0.0,13.0,24.24]],"6266965393581":[[2,3000.0,6500.0,7000.0,3500.0,17.25]],"6327961256109":[[5,0.0,35.1,70.1,0.0,16.54],[7,0.0,0.0,0.0,10.0,16.49],[11,37.2,0.0,0.0,0.0,null]],
+"6369052000429":[[0,13.1,16.2,0.0,17.2,82.9],[1,0.0,0.0,0.0,5.4,15.95],[2,0.0,21.3,0.0,21.3,16.56],[8,0.0,0.0,0.0,6.0,8.69],[11,0.0,9.3,0.0,4.9,34.84]],"6385324425389":[[0,0.0,0.0,20.0,50.0,27.88],[1,34.0,0.0,51.0,17.0,27.51],[5,70.1,0.0,0.0,0.0,null]],"6395606204589":[[8,1320.0,2352.0,2904.0,2736.0,8.63]],
+"6417014784173":[[7,50.0,0.0,20.0,66.0,22.99]],"6430561108141":[[7,20.0,0.0,70.7,0.0,16.82]],"6455908171949":[[0,99.3,0.0,334.6,262.5,39.04]],
+"6457287934125":[[7,0.0,0.0,12.0,0.0,22.99]],"6458177585325":[[5,5.0,0.0,0.0,0.0,null],[7,30.0,0.0,0.0,0.0,null],[10,0.0,0.0,0.0,67.5,35.94]],"6483144442029":[[3,0.0,0.0,0.0,3.2,75.59],[5,0.0,1.5,0.0,0.5,21.98],[6,35.5,25.5,25.5,22.0,15.93],[7,0.0,5.0,15.1,0.0,16.82],[11,29.4,69.7,30.5,100.0,30.71]],
+"6498740076717":[[2,0.0,0.0,2.5,0.0,19.2],[3,0.0,0.0,0.0,3.2,81.37],[4,1.2,1.0,0.0,0.0,28.12],[5,5.0,25.1,20.0,20.0,16.75],[6,10.0,0.0,24.0,48.0,15.9],[7,0.0,10.0,0.0,0.0,15.69],[9,23.0,0.0,0.0,0.0,null],[10,0.0,0.0,0.0,182.6,36.62]],"6512511811757":[[0,10.5,4.2,0.0,21.0,55.15],[3,0.0,0.0,3.2,0.0,74.54],[11,20.0,20.0,0.0,90.0,29.99]],"6544034791597":[[2,9.5,13.4,28.4,10.7,20.68],[7,20.0,0.0,20.0,10.0,18.66]],
+"6550928064685":[[1,0.0,0.0,0.0,5.8,12.51]],"6572307185837":[[7,0.0,0.0,0.0,7.0,17.49],[11,0.0,0.0,8.4,13.6,38.45]],"6623487983789":[[5,10.0,20.0,20.0,5.0,16.69],[7,6.0,0.0,5.0,18.0,16.32],[8,104.0,72.0,84.0,72.0,8.72],[10,0.0,0.0,135.0,91.3,28.56]],
+"6657250230445":[[10,0.0,45.6,0.0,0.0,35.1]],"6685502636205":[[0,3.0,10.4,13.6,2.1,70.14],[4,0.0,4.9,0.0,0.0,22.77],[5,15.0,0.0,0.0,0.0,null]],"6713867010221":[[0,0.0,0.0,0.0,37.4,35.63],[5,0.0,40.1,30.1,0.0,16.54],[7,0.0,0.0,0.0,12.0,16.49],[11,74.4,0.0,0.0,0.0,null]],
+"6714519617709":[[2,0.0,42.7,0.0,10.7,16.94],[4,6.0,0.0,0.0,0.0,null],[5,10.0,0.0,10.0,20.0,16.54],[11,13.9,2.0,8.2,0.0,47.7]],"6770928844973":[[6,530.0,490.0,350.0,640.0,16.45],[8,12.0,0.0,0.0,0.0,null]],"7127019258029":[[2,0.0,0.0,150.0,0.0,19.0],[7,0.0,60.0,0.0,60.0,16.09]],
+"7255874306221":[[0,2.0,0.0,1.0,0.0,32.66],[4,1.2,1.1,1.0,0.0,25.04],[5,5.0,15.0,10.0,15.0,17.03],[7,8.0,4.0,10.0,6.0,18.07],[11,12.2,9.3,11.6,9.6,35.84]],"7303730888877":[[1,24.7,65.4,67.7,37.6,15.35],[2,0.0,56.3,20.0,25.2,17.52],[6,20.0,0.0,0.0,0.0,null],[10,0.0,206.8,122.1,139.0,32.77],[11,7.0,17.0,0.0,30.0,30.84]],"7325218996397":[[0,0.0,0.4,2.0,0.0,151.84],[1,39.5,9.6,0.0,10.8,16.3],[2,67.4,44.9,101.0,85.3,17.67],[7,0.0,0.0,0.0,7.0,22.99],[11,4.9,0.0,7.8,19.2,31.23]],
+"7344233087149":[[0,4.2,12.6,2.1,10.5,68.37],[1,84.0,57.6,72.0,101.4,14.53],[2,10.7,10.7,21.3,0.0,18.12],[10,0.0,0.0,0.0,2.1,32.38],[11,7.7,15.0,3.0,12.0,29.99]],"7344248750253":[[0,8.4,9.4,10.4,4.2,61.99],[1,62.4,72.0,67.2,62.4,14.4],[2,10.7,10.7,10.7,10.7,16.94],[3,0.0,0.0,0.0,3.2,77.43],[10,0.0,0.0,11.7,2.1,17.31],[11,4.9,7.0,2.0,6.3,34.76]],"7376051732653":[[4,0.0,6.1,5.0,0.0,25.19],[6,10.0,0.0,0.0,0.0,null],[11,29.8,20.0,30.0,50.0,29.99]],
+"7440427122861":[[3,0.0,0.0,0.0,3.2,56.59],[11,31.2,25.0,40.0,26.0,29.99]],"7509943615661":[[4,0.0,0.0,2.2,0.0,22.16],[6,0.0,0.0,0.0,4.5,15.9],[11,0.0,2.8,19.8,0.0,33.17]],"7831757062317":[[2,201.6,0.0,0.0,0.0,null]],
+"8174582956205":[[2,10.7,10.7,21.3,10.7,16.81],[6,0.0,0.0,6.0,40.0,16.38],[9,15.0,104.0,0.0,0.0,39.23],[11,57.6,57.6,15.3,82.7,30.62]],"8436919238829":[[0,1.0,3.0,0.0,0.0,90.09]],"8498958205101":[[9,0.0,0.0,0.0,45.0,44.1]],
+"8555262771373":[[2,0.0,0.0,0.0,9.5,26.39],[7,0.0,0.0,0.0,10.0,16.49]],"8686714323117":[[0,0.0,0.0,2.0,0.0,95.04],[5,20.0,25.1,10.0,0.0,16.73],[6,0.0,10.0,2.0,0.0,16.45],[7,0.0,1.0,1.0,0.0,16.26],[11,0.0,14.0,0.0,0.0,28.93]],"8727268655277":[[1,0.0,24.7,37.1,0.0,14.55],[2,0.0,0.0,10.7,0.0,16.94],[5,0.0,0.0,0.0,25.1,17.07],[7,0.0,0.0,17.0,10.0,21.64],[11,0.0,0.0,0.0,28.0,44.13]],
+"8738048901293":[[0,18.4,16.4,12.3,20.4,38.33],[2,1373.2,1535.8,320.0,1098.9,16.89]],"8890142621869":[[0,88.0,6.6,0.0,296.8,60.9],[1,51.0,12.8,0.0,0.0,17.75],[5,0.0,0.0,0.0,5.0,16.54]],"8926085644461":[[1,0.0,0.0,0.0,60.0,44.99],[5,60.1,0.0,90.2,60.2,17.07],[7,0.0,0.0,10.0,10.1,16.91]],
+"8941490307245":[[2,0.0,0.0,10.7,0.0,16.94],[7,2.0,2.0,2.0,0.0,16.82],[11,1.4,7.0,0.0,2.6,29.99]],"9002677633197":[[1,0.0,48.5,48.5,0.0,17.81],[5,0.0,40.2,0.0,0.0,17.85],[10,0.0,170.1,0.0,240.0,36.05]],"9014872047789":[[1,0.0,0.0,48.5,0.0,16.82],[2,5.0,5.0,10.0,0.0,17.75],[11,0.0,0.0,10.0,0.0,29.99]],
+"9516369445037":[[0,8.2,4.1,4.1,4.1,170.73],[2,10.7,0.0,0.0,0.0,null],[5,0.0,20.0,35.1,75.2,16.54],[7,120.0,40.0,0.0,140.0,16.31]],"9541068849325":[[1,734.4,351.0,345.6,567.0,17.44],[2,1706.4,1301.9,1076.6,1640.1,18.48],[4,0.0,1.0,0.0,0.0,28.12]],"9565618602157":[[0,0.0,0.0,11.1,4.0,37.22],[1,259.2,135.0,383.4,243.0,17.47],[2,458.6,20.2,662.0,479.9,17.66],[4,0.0,2.2,2.0,2.1,24.72]],
+"9662789353645":[[0,1.0,2.0,2.0,0.0,89.1],[1,0.0,0.0,4.8,0.0,14.45],[4,15.2,4.0,6.0,8.1,27.13],[5,10.0,0.0,0.0,0.0,null],[6,0.0,0.0,0.0,40.0,16.45],[11,5.2,6.6,3.0,6.0,34.17]],"9785156206765":[[0,0.0,0.0,0.0,60.6,99.0],[1,0.0,52.2,62.4,40.4,14.83]],"9788114632877":[[0,0.0,0.0,0.0,4.0,89.1],[5,0.0,0.0,10.0,10.0,17.85],[6,0.0,0.0,0.0,36.0,13.49],[11,0.0,0.0,0.0,5.0,34.39]],
+"9906865569965":[[0,0.0,0.0,277.7,0.0,30.23],[3,0.0,0.0,0.0,12.8,83.99],[6,100.0,320.0,60.0,0.0,15.94]]
+};
+// Base geral da Praso (todas as praças), outubro/2026 até 28/10: tipologia -> [clientes que compraram no mês, clientes que compraram cada um dos 12 itens]
+const TIP_MES="outubro";
+// Linha de sucessão (BigQuery, 28/10/2026): por tipologia, as 20 classes de SKU (product_type) com mais clientes compradores em outubro na base Praso,
+// só classes com SKU ativo no CE e fora dos 12 itens do mapa. [classe, embalagem do SKU mais vendido no CE, clientes compradores]
+const SUC={"Açaí e Sorvetes":[["Creme de Avelã","3kg",105],["Floco de Creme de Avelã","750g",105],["Leite em Pó Ninho","750g",89],["Leite em Pó","750g",78],["Chocolate em Pó e Cacau","1,01kg",59],["Recheio","1,01kg",58],["Água s/ Gás Plástico","500ml",44],["Leite Integral","1l",43],["Chocolate Snack","41,5g",37],["Cream Cheese","1,5kg",36],["Água c/ Gás Plástico","500ml",36],["Chantilly","1l",35],["Sacola p/ Delivey","",33],["Confeito","500g",31],["Fruta Congelada","1,002kg",30],["Água Sanitária","5l",30],["Biscoito Recheado Chocolate","35g",26],["Óleo de Algodão Doméstico","5,1l",26],["Calabresa","2,5kg",26],["Café Tradicional a Vácuo","250g",26]],"Bar e Petiscos":[["Calabresa","2,5kg",157],["Whiskey","750ml",127],["Ketchup Institucional","3,4kg",108],["Óleo de Soja","900ml",103],["Vodka","1l",90],["Café Tradicional a Vácuo","250g",79],["Gordura Fry","14,5kg",75],["Creme Culinário","1kg",74],["Leite de Coco Institucional","1l",71],["Água Sanitária","5l",69],["Farinha s/ Fermento","1kg",68],["Caldo de Galinha","1,01kg",68],["Requeijão Culinário","1,5kg",65],["Guardanapo","",64],["Whiskey Low-Cost","1l",62],["Óleo de Algodão Doméstico","5,1l",59],["Leite Integral","1l",59],["Arroz Parboilizado","1kg",57],["Filé de Peito","20 kg",53],["Feijão Preto","1kg",53]],"Barraca de Praia":[["Óleo de Soja","900ml",13],["Ketchup Institucional","3,4kg",12],["Calabresa","2,5kg",11],["Creme Culinário","1kg",10],["Leite de Coco Institucional","1l",9],["Maionese Balde","3kg",8],["Gordura Fry","14,5kg",7],["Feijão Carioca","1kg",7],["Mandioca Amarela","1kg",7],["Sal Refinado","1kg",7],["Whiskey","750ml",6],["Arroz Parboilizado","1kg",6],["Café Tradicional a Vácuo","250g",6],["Margarina 3kg 60%","3kg",6],["Sal Sachê","1g",6],["Óleo de Algodão Institucional","14,5kg",5],["Vodka","1l",5],["Aperitivo","750ml",5],["Arroz Branco","1kg",5],["Guardanapo","",5]],"Cafeteria":[["Chantilly","1l",171],["Chocolate em Pó e Cacau","1,01kg",148],["Requeijão Culinário","1,5kg",135],["Leite Integral","1l",111],["Farinha s/ Fermento","1kg",106],["Leite em Pó Ninho","750g",102],["Creme de Avelã","3kg",99],["Cream Cheese","1,5kg",97],["Creme Culinário","1kg",84],["Filé de Peito","20 kg",82],["Açúcar Sachê","5g",77],["Leite em Pó","750g",73],["Manteiga Pote","500g",72],["Mussarela","4kg",67],["Milho","1,7kg",67],["Fruta Congelada","1,002kg",67],["Água c/ Gás Plástico","500ml",66],["Água s/ Gás Plástico","500ml",64],["Margarina 3kg 80%","3kg",61],["Maionese Sachê","7g",60]],"Catering, Buffet e Eventos":[["Chantilly","1l",42],["Chocolate em Pó e Cacau","1,01kg",39],["Creme Culinário","1kg",35],["Farinha s/ Fermento","1kg",33],["Margarina 15kg 80%","15kg",28],["Filé de Peito","20 kg",27],["Mussarela","4kg",26],["Requeijão Culinário","1,5kg",26],["Calabresa","2,5kg",24],["Caldo de Galinha","1,01kg",24],["Cream Cheese","1,5kg",23],["Café Tradicional a Vácuo","250g",22],["Leite em Pó Ninho","750g",21],["Leite Integral","1l",20],["Margarina 3kg 80%","3kg",17],["Açúcar Confeiteiro","1kg",16],["Molho de Tomate","1,7kg",16],["Queijo Brie","1kg",14],["Creme de Avelã","3kg",14],["Lombo Suíno","1,7kg",14]],"Churrascaria e Espetos":[["Creme Culinário","1kg",65],["Café Tradicional a Vácuo","250g",59],["Maminha Nacional","1,6kg",58],["Calabresa","2,5kg",57],["Gordura Fry","14,5kg",55],["Ketchup Institucional","3,4kg",47],["Óleo de Soja","900ml",46],["Caldo de Galinha","1,01kg",46],["Margarina 15kg 70%","15kg",43],["Maionese Balde","3kg",42],["Gordura de Palma","14,5kg",41],["Arroz Parboilizado","1kg",38],["Whiskey","750ml",37],["Milho","1,7kg",36],["Mussarela","4kg",34],["Molho Barbecue","3,4kg",33],["Mostarda Institucional","3,3kg",31],["Leite Integral","1l",30],["Requeijão Culinário","1,5kg",29],["Água Sanitária","5l",27]],"Cozinha Contemporânea":[["Óleo de Soja","900ml",46],["Requeijão Culinário","1,5kg",41],["Calabresa","2,5kg",41],["Gordura Fry","14,5kg",33],["Café Tradicional a Vácuo","250g",33],["Leite Integral","1l",32],["Cream Cheese","1,5kg",32],["Creme Culinário","1kg",32],["Farinha s/ Fermento","1kg",32],["Chocolate em Pó e Cacau","1,01kg",29],["Cerveja Premium Longneck","330ml",28],["Ketchup Institucional","3,4kg",28],["Milho","1,7kg",27],["Mussarela","4kg",26],["Aperitivo","750ml",26],["Whiskey","750ml",25],["Açúcar Confeiteiro","1kg",25],["Óleo de Algodão Doméstico","5,1l",24],["Spaghetti Comum","400g",23],["Arroz Branco","1kg",22]],"Cozinha Industrial":[["Farinha s/ Fermento","1kg",34],["Mussarela","4kg",30],["Calabresa","2,5kg",29],["Milho","1,7kg",28],["Leite em Pó","750g",26],["Café Tradicional a Vácuo","250g",26],["Filé de Peito","20 kg",24],["Cream Cheese","1,5kg",24],["Requeijão Culinário","1,5kg",23],["Creme Culinário","1kg",23],["Gordura Fry","14,5kg",22],["Ketchup Institucional","3,4kg",21],["Óleo de Soja","900ml",20],["Margarina 15kg 80%","15kg",19],["Arroz Parboilizado","1kg",19],["Molho de Tomate","1,7kg",19],["Caldo de Galinha","1,01kg",19],["Água Sanitária","5l",19],["Chocolate em Pó e Cacau","1,01kg",18],["Spaghetti Comum","400g",17]],"Distribuidor":[["Chantilly","1l",16],["Calabresa","2,5kg",14],["Requeijão Culinário","1,5kg",12],["Chocolate em Pó e Cacau","1,01kg",12],["Milho","1,7kg",11],["Chips","35g",10],["Chocolate Snack","41,5g",10],["Linguiça Defumada","2,5kg",9],["Recheio Forneável","1,01kg",9],["Cream Cheese","1,5kg",9],["Açúcar Confeiteiro","1kg",9],["Óleo de Algodão Doméstico","5,1l",8],["Presunto","3,5kg",8],["Creme de Avelã","3kg",8],["Margarina 3kg 80%","3kg",8],["Café Tradicional a Vácuo","250g",8],["Caldo de Galinha","1,01kg",8],["Gordura Fry","14,5kg",7],["Mussarela","4kg",7],["Margarina 15kg 80%","15kg",7]],"Doces e Confeitaria":[["Chantilly","1l",1272],["Chocolate em Pó e Cacau","1,01kg",1179],["Leite em Pó Ninho","750g",693],["Creme de Avelã","3kg",515],["Creme Culinário","1kg",421],["Margarina 3kg 80%","3kg",416],["Farinha s/ Fermento","1kg",400],["Margarina 15kg 80%","15kg",307],["Fruta Congelada","1,002kg",305],["Leite em Pó","750g",284],["Granulado","1,01kg",250],["Confeito de Chocolate","400g",246],["Recheio","1,01kg",214],["Cream Cheese","1,5kg",201],["Leite Integral","1l",192],["Sacola p/ Delivey","",192],["Achocolatado","180ml",189],["Açúcar Confeiteiro","1kg",187],["Filé de Peito","20 kg",186],["Requeijão Culinário","1,5kg",186]],"Educação":[["Azeite Doméstico","500ml",8],["Mussarela","4kg",5],["Creme Culinário","1kg",5],["Calabresa","2,5kg",5],["Mussarela Cotação","4kg",4],["Chocolate Snack","41,5g",4],["Óleo de Soja","900ml",4],["Café Tradicional a Vácuo","250g",4],["Leite Integral","1l",4],["Leite em Pó","750g",4],["Spaghetti Comum","400g",4],["Arroz Parboilizado","1kg",4],["Açúcar Cristal","1kg",4],["Detergente Líquido Institucional","5l",4],["Detergente Líquido Doméstico","500ml",4],["Requeijão Culinário","1,5kg",3],["Margarina 15kg 70%","15kg",3],["Ketchup Institucional","3,4kg",3],["Feijão Carioca","1kg",3],["Salsicha Suína","5kg",3]],"Frutos do Mar":[["Ketchup Institucional","3,4kg",22],["Calabresa","2,5kg",18],["Farinha s/ Fermento","1kg",17],["Óleo de Soja","900ml",16],["Gordura Fry","14,5kg",15],["Leite de Coco Institucional","1l",15],["Leite Integral","1l",14],["Café Tradicional a Vácuo","250g",13],["Azeite de Dendê Institucional","900ml",12],["Vinagre de Álcool","500ml",12],["Requeijão Culinário","1,5kg",11],["Açúcar Cristal","1kg",11],["Arroz Parboilizado","1kg",11],["Milho","1,7kg",11],["Azeite Doméstico","500ml",10],["Linguiça de Frango","5kg",10],["Creme Culinário","1kg",10],["Feijão Carioca","1kg",10],["Mostarda Institucional","3,3kg",10],["Mussarela","4kg",9]],"Hamburgueria":[["Cheddar Fatiado","2,24kg",198],["Óleo de Algodão Doméstico","5,1l",145],["Cream Cheese","1,5kg",125],["Ketchup Institucional","3,4kg",124],["Cheddar Cremoso","1,5kg",109],["Molho Barbecue","3,4kg",104],["Requeijão Culinário","1,5kg",96],["Calabresa","2,5kg",84],["Gordura Fry","14,5kg",79],["Sacola p/ Delivey","",75],["Maionese Sachê","7g",75],["Óleo de Soja","900ml",74],["Mostarda Sachê","5g",73],["Mostarda Institucional","3,3kg",69],["Milho","1,7kg",68],["Leite Integral","1l",63],["Floco de Creme de Avelã","750g",61],["Filé de Peito","20 kg",60],["Mussarela","4kg",46],["Café Tradicional a Vácuo","250g",44]],"Hotel e Pousada":[["Calabresa","2,5kg",89],["Leite Integral","1l",79],["Farinha s/ Fermento","1kg",75],["Presunto","3,5kg",65],["Salsicha Suína","5kg",62],["Mussarela","4kg",61],["Açúcar Sachê","5g",61],["Milho","1,7kg",60],["Açúcar Cristal","1kg",59],["Margarina 15kg 80%","15kg",55],["Café Tradicional a Vácuo","250g",54],["Manteiga Blister","10g",54],["Requeijão Culinário","1,5kg",54],["Leite em Pó","750g",54],["Achocolatado","180ml",52],["Flocão","400g",50],["Óleo de Soja","900ml",48],["Chocolate em Pó e Cacau","1,01kg",48],["Molho de Tomate","1,7kg",48],["Chocolate Snack","41,5g",46]],"Italiano e Massas":[["Requeijão Culinário","1,5kg",37],["Leite Integral","1l",33],["Milho","1,7kg",29],["Óleo de Soja","900ml",26],["Farinha s/ Fermento","1kg",25],["Mussarela","4kg",24],["Creme Culinário","1kg",23],["Café Tradicional a Vácuo","250g",23],["Cream Cheese","1,5kg",21],["Calabresa","2,5kg",21],["Cerveja Premium Longneck","330ml",19],["Óleo de Algodão Doméstico","5,1l",18],["Queijo Azul","2,7kg",18],["Presunto","3,5kg",17],["Ketchup Institucional","3,4kg",16],["Açúcar Cristal","1kg",15],["Sal Refinado","1kg",15],["Água Sanitária","5l",14],["Filé de Peito","20 kg",13],["Chocolate em Pó e Cacau","1,01kg",13]],"Japonês, Chinês e Asiático":[["Cream Cheese","1,5kg",68],["Farinha s/ Fermento","1kg",56],["Gordura Fry","14,5kg",53],["Óleo de Soja","900ml",51],["Filé de Peito","20 kg",43],["Café Tradicional a Vácuo","250g",42],["Óleo de Algodão Doméstico","5,1l",40],["Açúcar Cristal","1kg",36],["Cerveja Premium Longneck","330ml",35],["Mussarela","4kg",33],["Vinagre de Álcool","500ml",31],["Gordura de Palma","14,5kg",30],["Água Sanitária","5l",30],["Amido","1kg",30],["Pano","",28],["Sal Refinado","1kg",27],["Calabresa","2,5kg",26],["Extrato de Tomate","1,7kg",26],["Molho de Tomate","1,7kg",24],["Patinho","4,4kg",23]],"Lanches e Salgados":[["Óleo de Algodão Doméstico","5,1l",197],["Calabresa","2,5kg",185],["Gordura Fry","14,5kg",169],["Mussarela","4kg",168],["Requeijão Culinário","1,5kg",166],["Filé de Peito","20 kg",159],["Farinha s/ Fermento","1kg",155],["Cream Cheese","1,5kg",147],["Milho","1,7kg",145],["Ketchup Institucional","3,4kg",139],["Caldo de Galinha","1,01kg",138],["Chocolate em Pó e Cacau","1,01kg",132],["Margarina 15kg 80%","15kg",129],["Margarina 3kg 80%","3kg",110],["Creme Culinário","1kg",105],["Maionese Sachê","7g",100],["Café Tradicional a Vácuo","250g",94],["Gordura de Palma","14,5kg",93],["Chantilly","1l",89],["Leite Integral","1l",88]],"Marmitaria":[["Calabresa","2,5kg",113],["Creme Culinário","1kg",61],["Café Tradicional a Vácuo","250g",58],["Milho","1,7kg",54],["Filé de Peito","20 kg",53],["Óleo de Soja","900ml",50],["Arroz Parboilizado","1kg",48],["Mussarela","4kg",45],["Molho de Tomate","1,7kg",44],["Margarina 3kg 60%","3kg",44],["Spaghetti Comum","400g",43],["Caldo de Galinha","1,01kg",43],["Ketchup Institucional","3,4kg",42],["Requeijão Culinário","1,5kg",38],["Feijão Preto","1kg",35],["Leite em Pó Ninho","750g",35],["Coxa e Sobrecoxa","1,2kg",34],["Gordura Fry","14,5kg",33],["Azeite Doméstico","500ml",30],["Arroz Branco","1kg",29]],"Padaria":[["Margarina 15kg 80%","15kg",136],["Mussarela","4kg",118],["Mortadela de Carne","4,8kg",93],["Calabresa","2,5kg",82],["Requeijão Culinário","1,5kg",79],["Café Tradicional a Vácuo","250g",77],["Margarina 15kg 70%","15kg",73],["Creme Culinário","1kg",70],["Gordura Fry","14,5kg",65],["Óleo de Soja","900ml",65],["Chocolate em Pó e Cacau","1,01kg",64],["Milho","1,7kg",60],["Queijo Prato","2,24kg",59],["Maionese Sachê","7g",56],["Presunto","3,5kg",54],["Caldo de Galinha","1,01kg",54],["Manteiga Lata","3,5kg",51],["Chocolate Snack","41,5g",47],["Molho de Tomate","1,7kg",45],["Leite Integral","1l",43]],"Pizzaria":[["Requeijão Culinário","1,5kg",269],["Linguiça Defumada","2,5kg",164],["Cream Cheese","1,5kg",142],["Milho","1,7kg",138],["Mussarela","4kg",137],["Recheio Forneável","1,01kg",134],["Calabresa","2,5kg",124],["Molho de Tomate","1,7kg",119],["Maionese Sachê","7g",114],["Pepperoni","1kg",104],["Presunto","3,5kg",88],["Filé de Peito","20 kg",87],["Recheio","1,01kg",86],["Óleo de Soja","900ml",84],["Farinha s/ Fermento","1kg",78],["Azeitona Inteira Verde","2kg",78],["Recheio Ao Leite","1,01kg",64],["Mostarda Sachê","5g",61],["Gordura Fry","14,5kg",57],["Lombo Canadense","1,1kg",57]],"Self-service e Quilo":[["Calabresa","2,5kg",86],["Creme Culinário","1kg",77],["Caldo de Galinha","1,01kg",64],["Maionese Balde","3kg",61],["Milho","1,7kg",58],["Óleo de Soja","900ml",56],["Mussarela","4kg",52],["Ketchup Institucional","3,4kg",50],["Molho Barbecue","3,4kg",49],["Café Tradicional a Vácuo","250g",48],["Mostarda Institucional","3,3kg",47],["Leite Integral","1l",46],["Molho de Tomate","1,7kg",46],["Gordura Fry","14,5kg",43],["Arroz Parboilizado","1kg",42],["Feijão Preto","1kg",42],["Farinha s/ Fermento","1kg",40],["Azeite Doméstico","500ml",39],["Margarina 15kg 70%","15kg",37],["Spaghetti Comum","400g",37]],"À la carte Brasileiro":[["Calabresa","2,5kg",234],["Óleo de Soja","900ml",184],["Creme Culinário","1kg",176],["Café Tradicional a Vácuo","250g",165],["Requeijão Culinário","1,5kg",164],["Farinha s/ Fermento","1kg",160],["Leite Integral","1l",156],["Ketchup Institucional","3,4kg",151],["Mussarela","4kg",147],["Gordura Fry","14,5kg",137],["Milho","1,7kg",133],["Arroz Parboilizado","1kg",130],["Leite de Coco Institucional","1l",124],["Caldo de Galinha","1,01kg",121],["Óleo de Algodão Doméstico","5,1l",114],["Spaghetti Comum","400g",114],["Azeite Doméstico","500ml",112],["Filé de Peito","20 kg",107],["Mostarda Institucional","3,3kg",103],["Molho de Tomate","1,7kg",101]]};
+// Classes da linha de sucessão que o cliente já comprou nos últimos 90 dias: cliente -> [tipologia, posições já compradas]
+const CB={"10065951195309":["Cozinha Industrial","2,5,6,7,10,12,13,15,16,20"],"10072918491309":["Açaí e Sorvetes","1"],"10090234773677":["À la carte Brasileiro","2,4,5,12,16,17,18"],"10120154775725":["Lanches e Salgados","1,4,5"],"10146216116397":["Bar e Petiscos","4,6,8,16,18,19"],"10224593273005":["À la carte Brasileiro","1,2,3,9,11,12,13,15,16,17,19"],"5966230159533":["Cozinha Contemporânea","1,2,4,6,7,8,9,10,12,15,16,17,19,20"],"5973608825005":["Japonês, Chinês e Asiático","1,3,4,5,6,9,17,18,19"],"5975359815853":["Cozinha Industrial","2,3,4,9,12,16"],"5975648141485":["Churrascaria e Espetos","2,3,5,9,15"],"5976017666221":["Pizzaria","1,3,5,19"],"5976573182125":["Self-service e Quilo","7,10,15,16,19,20"],"5977434947757":["Pizzaria","1,4,5,8,13"],"5977505202349":["Lanches e Salgados","2,3,4,5,6,8,9,10,11,12,13,17"],"5977527484589":["Cozinha Industrial","4,7,9,11,17"],"5980508389549":["Padaria","1,3,4,5,7,8,9,10,11,12,14,16,17,19"],"5980568486061":["Hotel e Pousada","6,8,18"],"5980874047661":["Cozinha Contemporânea","1,2,3,6,7,8,11,12,14,16,17,18,20"],"5980894298285":["Hotel e Pousada","8,16,17,18"],"5980903243949":["À la carte Brasileiro","2,3,4,6,10,14"],"5981986750637":["Frutos do Mar","4,11,14,20"],"5981987307693":["Frutos do Mar","1,2,7,8,18,20"],"5982037737645":["Hotel e Pousada","7,14,15,18"],"5982039343277":["Hotel e Pousada","7,14"],"5982068408493":["Frutos do Mar","1,4,8,11"],"5982904877229":["Hotel e Pousada","1,3,4,5,6,7,8,11,13,15,16,17,18"],"5996538331309":["Cozinha Industrial","16"],"6006021685421":["Churrascaria e Espetos","1,2,3,4,7,9,10,13,14,15,19,20"],"6006221766829":["Pizzaria","1,2,3,4,5,10,14,20"],"6007799120045":["Catering, Buffet e Eventos","2,7,11,13"],"6011711160493":["Pizzaria","1,4,5,6,12,14"],"6020730454189":["À la carte Brasileiro","2,3,7,11"],"6027263869101":["Cozinha Contemporânea","1,2,4,6,8,10,12,14,15,16,17,20"],"6027670028461":["Churrascaria e Espetos","13,15"],"6045354295469":["Churrascaria e Espetos","3"],"6061620920493":["Churrascaria e Espetos","3,11"],"6082670887085":["Padaria","1,2,5,8,18"],"6084834197677":["Cafeteria","1,3,6,7,15"],"6168993956013":["Pizzaria","1,5,12,19"],"6173798301869":["Churrascaria e Espetos","7,9,12,16"],"6178618998957":["Pizzaria","2,4,5,10,12,14"],"6181488394413":["Doces e Confeitaria","1,2,3,4,11,12,14,17"],"6181552226477":["Pizzaria","1,3,4,8,14,16,18,19"],"6181643813037":["Doces e Confeitaria","1,2,3,4,11,12,17"],"6181910642861":["Churrascaria e Espetos","1,2,15"],"6182738165933":["Churrascaria e Espetos","15"],"6182770081965":["À la carte Brasileiro","2,3,6,7,8,9,10,11,12,13,14,17,19,20"],"6201784565933":["Doces e Confeitaria","1,4,5,8,11,13,17,18,19"],"6218264608941":["Frutos do Mar","1,4,8,18,19,20"],"6236938305709":["Hotel e Pousada","7,14,15,18"],"6238525063341":["Barraca de Praia","1,2,3,4,5,6,10,14,19,20"],"6238728356013":["Cozinha Industrial","2,3,4,10,11,12,13,15,16,19,20"],"6252805750957":["Cozinha Contemporânea","1,5,6,8,9,10,11,12,14,20"],"6261927477421":["Cozinha Contemporânea","1,11,20"],"6323675136173":["Churrascaria e Espetos","5,9"],"6327961256109":["Padaria","1,5,8,10,16,19"],"6369052000429":["Cozinha Contemporânea","1,3,4,5,6,7,11,14,15,16,17,19,20"],"6385324425389":["Catering, Buffet e Eventos","6,7,19"],"6394784546989":["Cafeteria","10,14"],"6395606204589":["Bar e Petiscos","2,5"],"6417014784173":["Churrascaria e Espetos","14"],"6430561108141":["Cozinha Contemporânea","1,2,5,7,15,18"],"6455908171949":["Cafeteria","2,12"],"6457287934125":["Italiano e Massas","1,2,4,6,7,8,10,11,12,13,14"],"6458177585325":["Distribuidor","2,5,8,9,12,16,19,20"],"6483144442029":["Hamburgueria","2,8,12,16,19"],"6498740076717":["Self-service e Quilo","2,3,5,6,7,8,10,15,16,18"],"6512511811757":["Pizzaria","1,3,4,5,6,8,10,11,12,13,14,16,19,20"],"6544025813165":["Churrascaria e Espetos","3,15"],"6544034791597":["Bar e Petiscos","1,3,4,6,7,8,11,18,20"],"6550928064685":["Pizzaria","1,3,5,6"],"6572307185837":["Pizzaria","1,5,13"],"6623487983789":["Churrascaria e Espetos","2,5,6,9,13,14,16"],"6657250230445":["Marmitaria","1,6,7,18"],"6685502636205":["Pizzaria","1,5,6,10,12,14,19,20"],"6713867010221":["Padaria","1,2,5,8,10,11,12,14,16,18,19"],"6714519617709":["Hotel e Pousada","1,2,3,4,5,6,7,8,11,12,13,15,16,17,18,19,20"],"6770928844973":["Churrascaria e Espetos","3,6,7,8,9"],"7074824781997":["Lanches e Salgados","1,10"],"7079425540269":["Doces e Confeitaria","2"],"7127019258029":["Educação","3,6,9,16,18"],"7255874306221":["À la carte Brasileiro","1,2,3,5,6,8,9,11,13,14,16,20"],"7257382518957":["Lanches e Salgados","1,6"],"7303730888877":["Pizzaria","1,2,4,7,8,12,14,15"],"7325218996397":["Cozinha Contemporânea","1,2,3,5,8,9,10,11,13,14,15,16,17,18,19,20"],"7344233087149":["Cozinha Contemporânea","1,4,5,6,7,9,11,14,15,16,17,18,20"],"7344248750253":["Hotel e Pousada","1,3,5,8,11,16,17,18,19,20"],"7376051732653":["Italiano e Massas","3,6,7,9,10,14,15"],"7440427122861":["Pizzaria","1,2,3,7,8,10,11,12,13,14,20"],"7509943615661":["Padaria","2,4,5,8,10,12,15,19"],"7831757062317":["Cafeteria","1,6,15"],"8067896443053":["Distribuidor","8,9,10,13"],"8174582956205":["Cozinha Contemporânea","1,2,3,6,9,10,12,13,14,17,20"],"8436919238829":["Hotel e Pousada","8,14,16,17,19"],"8454242795693":["Hotel e Pousada","2,3,4,5,6,11,15,16,19"],"8498958205101":["Hotel e Pousada","6,8,17,18"],"8555262771373":["Bar e Petiscos","8"],"8686714323117":["Pizzaria","1,3,4,5,6,7,10,11,13,19,20"],"8688624992429":["Cozinha Industrial","2,8,9"],"8727268655277":["Lanches e Salgados","4,6,7,8,12,17,19,20"],"8738048901293":["Doces e Confeitaria","1,2,3,5,7,8,12,17,18"],"8890142621869":["Doces e Confeitaria","1,2,3,8,18,20"],"8926085644461":["Italiano e Massas","1,4"],"8941490307245":["À la carte Brasileiro","1,2,3,4,5,6,10,13,17"],"9002677633197":["Italiano e Massas","1,3,6,7,9,10,11"],"9014872047789":["Lanches e Salgados","4,12,20"],"9371339161773":["Padaria","7"],"9516369445037":["À la carte Brasileiro","2,3,4,5,7,9,10,14,16,18"],"9541068849325":["Doces e Confeitaria","2,7,13,15,16,18"],"9565618602157":["Doces e Confeitaria","1,2,3,7,9,10,13,14,15,16,18,19,20"],"9662789353645":["Hamburgueria","1,2,3,4,5,7,9,12,15,17,20"],"9752877203629":["Lanches e Salgados","1,6"],"9785156206765":["Cafeteria","1,2,3,10,11,15"],"9788114632877":["À la carte Brasileiro","3,4,5,6,7,13,15,18"],"9906865569965":["Pizzaria","1,3,5,6,8,14"]};
+
+const TIP={"Atacarejo e Supermercado":[180,9,33,51,0,6,4,2,8,10,7,0,19],"Açaí e Sorvetes":[367,50,86,149,0,21,7,15,12,6,6,4,20],"Açougue e Frigorífico":[78,2,6,6,1,3,2,9,4,1,4,5,10],"Bar e Petiscos":[529,20,55,64,3,34,44,80,74,47,46,34,69],"Barraca de Praia":[40,0,3,7,0,2,4,5,10,0,1,1,2],"Cafeteria":[536,100,164,213,5,64,30,29,39,27,10,14,65],"Catering, Buffet e Eventos":[129,35,44,59,7,0,10,10,15,1,3,2,16],"Churrascaria e Espetos":[344,10,20,20,1,12,19,31,32,22,19,25,39],"Clube e Associação":[36,4,3,4,0,1,5,2,3,2,4,1,6],"Cozinha Contemporânea":[184,21,33,48,3,12,30,21,37,10,12,19,36],"Cozinha Industrial":[183,19,28,45,1,4,16,11,14,3,12,5,16],"Culinária Internacional":[57,6,8,26,0,8,10,6,6,3,3,0,12],"Distribuidor":[116,10,10,18,0,7,2,3,10,4,0,1,10],"Doces e Confeitaria":[2494,831,1195,1640,2,92,12,34,132,19,23,13,31],"Dono(a) de Casa":[120,13,24,29,1,2,0,11,4,0,6,5,8],"Educação":[27,1,7,6,1,1,0,0,4,0,2,0,2],"Escritórios, Consultórios e Lojas":[133,5,6,16,1,0,0,5,2,12,3,3,7],"Frutos do Mar":[73,2,17,10,1,4,5,12,15,3,4,0,13],"Hamburgueria":[528,14,43,33,7,133,12,139,59,16,11,26,170],"Hospital":[40,1,5,7,0,0,0,0,0,0,4,1,2],"Hotel e Pousada":[275,32,52,86,4,20,20,19,19,28,18,6,20],"Italiano e Massas":[109,9,18,17,1,12,15,19,22,5,2,4,19],"Japonês, Chinês e Asiático":[238,7,23,23,1,4,14,25,60,10,17,3,11],"Lanches e Salgados":[1007,72,130,242,9,66,16,59,89,17,22,22,100],"Marmitaria":[346,12,55,40,0,9,19,25,42,10,28,38,34],"Mercearia e Conveniência":[447,25,86,99,0,20,12,14,12,38,14,3,28],"Motel":[29,3,9,8,0,7,4,6,7,6,0,0,7],"Padaria":[618,52,75,139,0,34,13,9,21,25,9,8,35],"Pizzaria":[635,45,43,38,14,119,31,31,35,7,17,15,123],"Saudável e Natural":[92,8,16,16,0,5,11,2,7,3,1,0,9],"Self-service e Quilo":[296,21,55,68,5,19,52,24,61,7,12,21,28],"À la carte Brasileiro":[965,69,135,157,7,81,127,134,151,56,77,74,153]};
+
+
+/* ===== Helpers ===== */
+const CLIENTS=RAW.map(r=>({id:r[0],ka:r[1],cnpj:r[2],nome:r[3]||r[4],razao:r[4],grupo:r[5],tip:r[6],rec:r[7],dias:r[8]}));
+const BY_ID=Object.fromEntries(CLIENTS.map(c=>[c.id,c]));
+const fmtBRL=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const fmtBRL2=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN=(v,d=0)=>v.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtPctN=v=>fmtN(v*100,v>0&&v<0.1?1:0)+"%";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const unit=i=>SKUS[i].u;
+const unitP=i=>SKUS[i].u==="lata"?"latas":SKUS[i].u;
+const fmtVol=(v,i)=>`${fmtN(v,SKUS[i].u==="lata"||v>=100?0:1)} ${unitP(i)}`;
+const fmtCnpj=c=>c&&c.length===14?`${c.slice(0,2)}.${c.slice(2,5)}.${c.slice(5,8)}/${c.slice(8,12)}-${c.slice(12)}`:c;
+function parseNum(s){if(s==null)return NaN;s=String(s).trim().replace(/R\$\s?/,"");if(!s)return NaN;
+  if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");return parseFloat(s);}
+const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g," ");
+const isPraso=s=>/praso/.test(norm(s));
+function trRow(cid,i){return (TR[cid]||[]).find(x=>x[0]===i)||null;}
+function prasoBuy(cid,i){const b=trRow(cid,i);if(!b)return null;const vol=(b[2]+b[3]+b[4])/3;if(!vol||!b[5])return null;return{vol,pkg:b[5]};}
+function trend(cid,i){const b=trRow(cid,i);if(!b)return null;const v=[b[1],b[2],b[3],b[4]];const tot=v.reduce((x,y)=>x+y,0);if(!tot)return null;
+  const a=(v[0]+v[1])/2, z=(v[2]+v[3])/2;let k,l,ch=null;
+  if(v[3]===0&&v[2]===0){k="forte";l="Parou de comprar há mais de 30 dias";ch=-1;}
+  else if(v[3]===0){k="forte";l="Sem compra nos últimos 30 dias";ch=-1;}
+  else if(a===0){k="alta";l="Começou a comprar";}
+  else{ch=(z-a)/a;if(ch>0.15){k="alta";l=`Em alta (+${fmtN(ch*100,0)}%)`;}else if(ch< -0.20){k="forte";l=`Queda forte (${fmtN(ch*100,0)}%)`;}else if(ch< -0.05){k="queda";l=`Queda leve (${fmtN(ch*100,0)}%)`;}else{k="const";l="Estável";}}
+  return{v,k,l,ch};}
+const jcDrop=(cid,i)=>trend(cid,i)?.k==="forte";
+function trendHtml(cid,i,compact){const t=trend(cid,i);if(!t)return compact?"":`<span class="chip neu">Sem compra na Praso nos últimos 120 dias</span>`;
+  const mx=Math.max(...t.v,1);const lab=["4º","3º","2º","último"];
+  const bars=`<span class="spark" title="Volume por janela de 30 dias, do mais antigo ao mais recente">${t.v.map(x=>`<i style="height:${Math.max(2,Math.round(x/mx*22))}px"></i>`).join("")}</span>`;
+  const cls=t.k==="alta"?"good":t.k==="forte"?"bad":t.k==="queda"?"warn":"neu";
+  if(compact)return `<span class="chip ${cls}">${esc(t.l)}</span>`;
+  return `${bars}<span class="chip ${cls}">${esc(t.l)}</span><span class="subtle">Últimos 4 meses (30 em 30 dias): ${t.v.map(x=>fmtVol(x,i)).join(" → ")}</span>`;}
+function classLabel(x){const[pt,sz]=x;return sz&&!norm(pt).replace(/\s/g,"").includes(norm(sz).replace(/\s/g,""))?`${pt} ${sz.replace(/(\d)\s?(kg|g|ml|l)$/i,(m,d,u)=>d+(u.toLowerCase()==="l"?"L":u.toLowerCase()))}`:pt;}
+function succession(cid){const c=BY_ID[cid], cbv=CB[cid], tip=(cbv&&SUC[cbv[0]])?cbv[0]:c.tip;
+  const bought=new Set(cbv&&cbv[0]===tip?String(cbv[1]).split(",").filter(Boolean).map(Number):[]);
+  return{tip,list:(SUC[tip]||[]).map((x,k)=>({rank:k+1,label:classLabel(x),nc:x[2]})).filter(o=>!bought.has(o.rank))};}
+function autoSugs(cid){const s=succession(cid),out={};let k=0;
+  for(let i=0;i<SKUS.length;i++){const e=getE(cid,i);if(e.nu||(e.jc&&!jcDrop(cid,i))){const o=s.list[k++];if(o)out[i]={...o,tip:s.tip};}}
+  return out;}
+function autoHtml(cid,i){const o=autoSugs(cid)[i];if(!o)return `<div class="auto">Sem sugestão automática: o cliente já compra todas as classes mais vendidas em ${esc(succession(cid).tip||"sua tipologia")}.</div>`;
+  const tot=TIP[o.tip]?.[0];
+  return `<div class="auto">Sugestão automática de SKU: <b>${esc(o.label)}</b> · nº ${o.rank} mais comprado por ${esc(o.tip)} na Praso (${fmtN(o.nc,0)}${tot?` de ${fmtN(tot,0)}`:""} clientes em ${TIP_MES}), disponível no CE e ainda não comprado por este cliente.</div>`;}
+function mapMsg(cid,i){const t=trend(cid,i);
+  return `<div class="mapmsg"><b>${esc(t.l)} na Praso. Faça o mapeamento:</b> ele passou a comprar de outro fornecedor (qual marca, embalagem e preço)? O consumo caiu (cardápio, movimento, sazonalidade)? Teve problema com a gente (preço, falta, entrega, qualidade)? Preencha abaixo o que ele compra fora hoje.</div>`;}
+function tipLine(tip,i){const d=TIP[tip];if(!d||!d[0])return "";const n=d[i+1]||0;
+  return `<div class="tipline">Base Praso · <b>${fmtN(n,0)}</b> de ${fmtN(d[0],0)} clientes ${esc(tip)} que compraram em ${TIP_MES} levaram este item (${fmtN(n/d[0]*100,0)}%)</div>`;}
+const tablePkg=i=>SKUS[i].price;
+const embLabel=i=>i===RB?"Latas por embalagem":`Peso da embalagem (${unit(i)})`;
+const fmtDate=d=>{if(!d)return"—";const[y,m,dd]=d.split("-");return`${dd}/${m}/${y.slice(2)}`;};
+const today=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+const addDays=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
+
+/* ===== Estado ===== */
+const entries={};   // cid -> {itens:{code:{marca,troca,sabor,forn,peso,qtd,preco,nu}}, updatedAt, updatedBy}
+let tests={};
+let ants={};        // id -> {nome,cnpj,tip,ka,item,marca,troca,sabor,forn,peso,qtd,preco,obs,createdAt,updatedBy}       // id -> {cid,ka,item,marcaAtual,marcaNova,data,status,obs,volEst,potEst,createdAt,updatedAt,updatedBy}
+const dirty=new Set();
+let db=null, userApi=null, myId=null, canWrite=true, downloads=null;
+let ui={view:"fill",ka:"all",buyer:0,cur:null,q:"",tf:"open",tform:null,aform:null};
+try{const s=JSON.parse(localStorage.getItem("mapa-ka-ui")||"{}");if(s.ka)ui.ka=s.ka;if(s.view)ui.view=s.view;if(s.cur&&BY_ID[s.cur])ui.cur=s.cur;if(Number.isInteger(s.buyer))ui.buyer=s.buyer;}catch(e){}
+function saveUi(){try{localStorage.setItem("mapa-ka-ui",JSON.stringify({ka:ui.ka,view:ui.view,cur:ui.cur,buyer:ui.buyer}));}catch(e){}}
+
+function getE(cid,i){return entries[cid]?.itens?.[SKUS[i].code]||{};}
+const FIELDS=["marca","troca","forn","peso","qtd","preco"];
+const reqF=i=>i===RB?[...FIELDS,"sabor"]:FIELDS;
+const hasF=(e,f)=>["peso","qtd","preco"].includes(f)?parseNum(e[f])>0:!!String(e[f]??"").trim();
+function rowInfo(cid,i){const e=getE(cid,i),need=reqF(i).length;if(e.nu||(e.jc&&!jcDrop(cid,i)))return{have:need,need};return{have:reqF(i).filter(f=>hasF(e,f)).length,need};}
+function calc(cid,i){
+  const e=getE(cid,i), pb=prasoBuy(cid,i);
+  const peso=parseNum(e.peso), qtd=parseNum(e.qtd), preco=parseNum(e.preco);
+  const nu=!!e.nu||(!!e.jc&&!jcDrop(cid,i)), hasVol=peso>0&&qtd>0, hasPreco=preco>0&&peso>0;
+  const volPraso=pb?pb.vol:0;
+  const volFora=nu||!hasVol?0:peso*qtd;
+  const precoU=!nu&&hasPreco?preco/peso:null;
+  const refP=pb?pb.pkg:tablePkg(i);
+  const pot=volFora*(precoU??refP);
+  const diff=precoU?(refP-precoU)/precoU:null;   // >0 = Praso mais cara
+  return{e,pb,peso,qtd,preco,nu,hasVol,precoU,volPraso,volFora,volTot:volFora+volPraso,refP,pot,diff,filled:nu||hasVol,troca:nu?"":(e.troca||"")};
+}
+function cliStats(cid){let done=0,any=0;for(let i=0;i<SKUS.length;i++){const r=rowInfo(cid,i);if(r.have>=r.need)done++;if(r.have>0)any++;}return{done,any};}
+function kaStats(ka){let have=0,need=0,done=0,rows=0,started=0,full=0,n=0;
+  for(const c of CLIENTS){if(ka!=="all"&&c.ka!==ka)continue;n++;let a=false,all=true;
+    for(let i=0;i<SKUS.length;i++){const r=rowInfo(c.id,i);have+=r.have;need+=r.need;rows++;if(r.have>=r.need)done++;else all=false;if(r.have>0)a=true;}
+    if(a)started++;if(all)full++;}
+  return{pct:need?have/need:0,done,rows,started,full,n};}
+const visibleClients=()=>CLIENTS.filter(c=>ui.ka==="all"||c.ka===ui.ka);
+const testsFor=(cid,i)=>Object.values(tests).filter(t=>t.cid===cid&&t.item===SKUS[i].code);
+const openTest=(cid,i)=>testsFor(cid,i).filter(t=>OPEN_ST.has(t.status)).sort((a,b)=>(a.data||"").localeCompare(b.data||""))[0];
+const itemIdx=code=>SKUS.findIndex(s=>s.code===code);
+
+/* ===== Persistência ===== */
+const timers={}, saving={};
+let errState=false, dbTried=false, tSaving=0;
+function setStatus(){
+  const el=document.getElementById("status"),t=document.getElementById("statusTxt");
+  if(!db){el.dataset.s="off";t.textContent=dbTried?"Sem salvamento":"Conectando…";return;}
+  if(errState){el.dataset.s="error";t.textContent="Erro ao salvar. Tente de novo";return;}
+  if(dirty.size||tSaving||Object.values(saving).some(Boolean)){el.dataset.s="saving";t.textContent="Salvando…";return;}
+  el.dataset.s="ok";t.textContent="Tudo salvo";
+}
+function scheduleSave(cid){dirty.add(cid);setStatus();clearTimeout(timers[cid]);timers[cid]=setTimeout(()=>flush(cid),800);}
+function readOnly(){canWrite=false;showNotice("Seu acesso a este painel é só de leitura. Entre com um e-mail @praso.com.br para preencher.");}
+async function flush(cid){
+  if(!db||!canWrite)return;
+  if(saving[cid]){timers[cid]=setTimeout(()=>flush(cid),400);return;}
+  saving[cid]=true;dirty.delete(cid);setStatus();
+  const c=BY_ID[cid], ent=entries[cid]||{itens:{}};
+  const body={ka:c.ka,cnpj:c.cnpj,itens:JSON.parse(JSON.stringify(ent.itens||{})),updatedAt:new Date().toISOString(),updatedBy:myId||""};
+  entries[cid]={...ent,updatedAt:body.updatedAt,updatedBy:body.updatedBy};
+  try{await db.collection("mapa").doc(cid).set(body);errState=false;}
+  catch(err){if(err&&(err.code==="invalid_argument"||err.code==="permission_denied"||err.code==="not_granted")){readOnly();renderView();}else{errState=true;dirty.add(cid);}}
+  saving[cid]=false;setStatus();
+}
+async function saveTest(t){
+  if(!db||!canWrite)return false;
+  t.updatedAt=new Date().toISOString();t.updatedBy=myId||"";
+  tests[t.id]={...t};tSaving++;setStatus();
+  try{const {id,...body}=t;await db.collection("testes").doc(t.id).set(body);errState=false;return true;}
+  catch(err){if(err&&(err.code==="invalid_argument"||err.code==="permission_denied"||err.code==="not_granted"))readOnly();else errState=true;return false;}
+  finally{tSaving--;setStatus();}
+}
+async function deleteTest(id){
+  if(!db||!canWrite)return;delete tests[id];tSaving++;setStatus();
+  try{await db.collection("testes").doc(id).delete();}catch(e){errState=true;}finally{tSaving--;setStatus();}
+}
+function showNotice(t){const n=document.getElementById("notice");n.textContent=t;n.hidden=false;}
+
+/* ===== Cabeçalho e faixa de preenchimento ===== */
+function renderSegs(){
+  const opts=[["all","Todos"],...KA_ORDER.map(k=>[k,KAS[k]])];
+  document.getElementById("kaSeg").innerHTML=opts.map(([k,l])=>`<button data-ka="${k}" aria-pressed="${ui.ka===k}">${l}</button>`).join("");
+  document.getElementById("buySeg").innerHTML=BUYERS.map((b,i)=>`<button data-buyer="${i}" aria-pressed="${ui.buyer===i}">${esc(b)}</button>`).join("");
+  document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===ui.view));
+  document.getElementById("kaSeg").hidden=ui.view==="buy";
+  document.getElementById("buySeg").hidden=ui.view!=="buy";
+}
+function renderStrip(){
+  const cards=[["all","Todos"],...KA_ORDER.map(k=>[k,KAS[k]])].map(([k,l])=>{const s=kaStats(k);
+    return `<button class="kac" data-ka="${k}" aria-pressed="${ui.ka===k&&ui.view!=="buy"}">
+      <span class="kn">${k==="all"?"Total":"KA "+esc(l)}</span>
+      <span class="kp">${fmtPctN(s.pct)}</span>
+      <span class="meter"><i style="width:${Math.min(100,s.pct*100).toFixed(1)}%"></i></span>
+      <span class="kd">${s.done}/${s.rows} itens completos · ${s.started}/${s.n} clientes iniciados</span></button>`;}).join("");
+  document.getElementById("kastrip").innerHTML=cards;
+}
+function setView(v){ui.view=v;saveUi();renderSegs();
+  for(const k of ["fill","tests","sell","buy","ant"])document.getElementById("view-"+k).hidden=k!==v;
+  renderView();}
+function renderView(){renderStrip();
+  if(ui.view==="fill"){renderList();renderPanel();}
+  else if(ui.view==="tests")renderTests();
+  else if(ui.view==="sell")renderSell();
+  else if(ui.view==="ant")renderAnt();
+  else renderBuy();}
+
+/* ===== Preencher: lista ===== */
+function ringCls(s){return s.done>=SKUS.length?"done":s.any>0?"part":"";}
+function renderList(){
+  const q=norm(ui.q), vis=visibleClients();
+  const list=vis.filter(c=>!q||norm(c.nome+" "+c.razao+" "+c.cnpj+" "+c.grupo).includes(q));
+  if(!ui.cur||!vis.find(c=>c.id===ui.cur))ui.cur=list[0]?.id||vis[0]?.id||null;
+  const st=vis.map(c=>cliStats(c.id));
+  document.getElementById("listCount").textContent=`${list.length} clientes`;
+  document.getElementById("listDone").textContent=`${st.filter(s=>s.done>=SKUS.length).length} completos · ${st.filter(s=>s.any>0).length} iniciados`;
+  document.getElementById("cliList").innerHTML=list.length?list.map(c=>{const s=cliStats(c.id);
+    return `<li><button class="cli" data-cid="${c.id}" aria-current="${c.id===ui.cur}">
+      <span class="n">${esc(c.nome)}</span>
+      <span class="s">${ui.ka==="all"?esc(KAS[c.ka])+" · ":""}${fmtBRL(c.rec)}/mês na Praso</span>
+      <span class="p"><span class="ring ${ringCls(s)}" data-ring="${c.id}">${s.done}/${SKUS.length}</span></span></button></li>`;}).join("")
+    :`<li class="empty">Nenhum cliente encontrado.</li>`;
+}
+function updateRing(cid){const s=cliStats(cid);const el=document.querySelector(`[data-ring="${cid}"]`);if(el){el.textContent=`${s.done}/${SKUS.length}`;el.className="ring "+ringCls(s);}
+  const vis=visibleClients().map(c=>cliStats(c.id));
+  document.getElementById("listDone").textContent=`${vis.filter(s=>s.done>=SKUS.length).length} completos · ${vis.filter(s=>s.any>0).length} iniciados`;}
+
+/* ===== Preencher: ficha ===== */
+function datalists(){
+  const forn=new Map([["praso","Praso"]]);
+  const marcas=SKUS.map(s=>new Map(s.pb.map(b=>[norm(b),b])));
+  const sab=new Map(SABORES.map(v=>[norm(v),v]));
+  for(const ent of Object.values(entries)){for(let i=0;i<SKUS.length;i++){const e=ent.itens?.[SKUS[i].code];if(!e)continue;
+    if(e.forn&&!forn.has(norm(e.forn)))forn.set(norm(e.forn),e.forn.trim());
+    if(e.marca&&!marcas[i].has(norm(e.marca)))marcas[i].set(norm(e.marca),e.marca.trim());}}
+  document.getElementById("dl-forn").innerHTML=[...forn.values()].map(v=>`<option value="${esc(v)}">`).join("");
+  document.getElementById("dl-sabor").innerHTML=[...sab.values()].map(v=>`<option value="${esc(v)}">`).join("");
+  document.getElementById("dls").innerHTML=marcas.map((m,i)=>`<datalist id="dl-m-${i}">${[...m.values()].map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`).join("")
+    +SKUS.map((s,i)=>`<datalist id="dl-pb-${i}">${s.pb.map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`).join("");
+}
+function trocaChip(t){return t==="sim"?`<span class="chip good">Aceita trocar</span>`:t==="teste"?`<span class="chip good" style="opacity:.85">Aceita testar</span>`:t==="nao"?`<span class="chip bad">Não troca</span>`:"";}
+function calcHtml(cid,i){
+  const r=calc(cid,i);
+  if(r.e.jc&&!jcDrop(cid,i))return `<span class="chip good">Já compra conosco</span>${trendHtml(cid,i,false)}`;
+  if(r.nu)return `<span class="chip neu">Cliente não usa</span>`;
+  const ot=openTest(cid,i);
+  const testBit=ot?`<span class="pill ${ot.status}">Teste ${esc(ot.marcaNova||"")} · ${fmtDate(ot.data)}</span>`
+    :(canWrite&&(r.troca==="sim"||r.troca==="teste")?`<button class="btn sm primary" data-agendar="${cid}|${i}">Agendar teste</button>`:"");
+  if(!r.hasVol)return `<span style="color:var(--muted)">Preencha embalagem e embalagens/mês para calcular</span>${trocaChip(r.troca)}${testBit}`;
+  const u=unit(i);
+  let chip="";
+  if(r.diff!==null){const d=r.diff;
+    chip=Math.abs(d)<0.02?`<span class="chip neu">Praso no mesmo preço</span>`
+      :d<0?`<span class="chip good">Praso ${fmtN(-d*100,0)}% mais barata</span>`
+      :`<span class="chip bad">Praso ${fmtN(d*100,0)}% mais cara</span>`;}
+  return `<span>Fora da Praso: <b class="mono">${fmtVol(r.volFora,i)}/mês</b></span>
+    ${r.precoU?`<span>Paga <b class="mono">${fmtBRL2(r.precoU)}/${u}</b></span>`:""}
+    <span class="pot">${fmtBRL(r.pot)}/mês</span>${chip}${trocaChip(r.troca)}${testBit}`;
+}
+function rowHtml(cid,i){
+  const s=SKUS[i], e=getE(cid,i), pb=prasoBuy(cid,i), u=unit(i), dis=canWrite?"":"disabled";
+  const id=f=>`in-${cid}-${i}-${f}`;
+  const inp=(f,label,attrs="",cls="")=>`<label class="f ${cls}"><span>${label}</span><input id="${id(f)}" data-f="${f}" value="${esc(e[f])}" autocomplete="off" ${attrs} ${dis}></label>`;
+  return `<div class="row ${e.nu?"nu":""}" data-i="${i}">
+    <div class="item"><div style="min-width:0;flex:1 1 260px"><div class="in">${esc(s.nome)}</div>
+      <div class="ir">Vale ${esc(s.var)} · Ref. Praso: ${esc(s.ref)} · tabela ${fmtBRL2(tablePkg(i))}/${u}</div>
+      <div class="ib ${pb?"":"none"}">${pb?`Já compra na Praso: ${fmtVol(pb.vol,i)}/mês a ${fmtBRL2(pb.pkg)}/${u} ${trendHtml(cid,i,true)}`:"Não comprou na Praso nos últimos 90 dias"}</div>
+      ${tipLine(BY_ID[cid]?.tip,i)}</div>
+      <div class="checks"><label class="nuc"><input type="checkbox" id="${id("jc")}" data-f="jc" ${e.jc?"checked":""} ${dis}> Já compra conosco</label>
+      <label class="nuc"><input type="checkbox" id="${id("nu")}" data-f="nu" ${e.nu?"checked":""} ${dis}> Não usa</label></div></div>
+    ${(e.jc&&!jcDrop(cid,i))||e.nu?`<div class="jcbox">${autoHtml(cid,i)}${inp("sug","Outra sugestão do KA (opcional)",`placeholder="Se preferir outro SKU, escreva aqui"`)}</div>`:`${e.jc?mapMsg(cid,i)+`<div style="margin-bottom:8px">${trendHtml(cid,i,false)}</div>`:""}<div class="fields">
+      ${inp("marca","Marca que usa",`list="dl-m-${i}"`)}
+      <label class="f"><span>Marca pode ser trocada?</span><select id="${id("troca")}" data-f="troca" ${dis}><option value="">Selecione</option>${TROCA.map(([k,l])=>`<option value="${k}" ${e.troca===k?"selected":""}>${l}</option>`).join("")}</select></label>
+      ${i===RB?inp("sabor","Sabor(es)",`list="dl-sabor" placeholder="Ex.: Tradicional, Melancia"`):""}
+      ${inp("forn","Fornecedor atual",`list="dl-forn"`)}
+      ${inp("peso",embLabel(i),`inputmode="decimal" placeholder="${i===RB?"Ex.: 24":"Ex.: 2,1"}"`,"n")}
+      ${inp("qtd","Embalagens/mês",`inputmode="decimal" placeholder="0"`,"n")}
+      ${inp("preco","Preço da embalagem (R$)",`inputmode="decimal" placeholder="0,00"`,"n")}
+      ${e.jc?inp("sug","Sugestão de SKU (opcional)"):""}
+    </div>`}
+    <div class="calc" data-calc="${i}">${calcHtml(cid,i)}</div>
+  </div>`;
+}
+async function editorName(ent){
+  if(!ent?.updatedBy||!userApi?.profiles)return "";
+  try{const ps=await userApi.profiles([ent.updatedBy]);return ps?.[ent.updatedBy]?.name||"";}catch(e){return "";}
+}
+function clientPot(cid){let t=0;for(let i=0;i<SKUS.length;i++)t+=calc(cid,i).pot;return t;}
+function renderPanel(){
+  const p=document.getElementById("panel");
+  const c=BY_ID[ui.cur];
+  if(!c){p.innerHTML=`<div class="card empty">Escolha um cliente na lista.</div>`;return;}
+  datalists();
+  const vis=visibleClients(), idx=vis.findIndex(x=>x.id===c.id);
+  const ent=entries[c.id], st=cliStats(c.id);
+  const when=ent?.updatedAt?new Date(ent.updatedAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"";
+  p.innerHTML=`<div class="card">
+    <div class="chead">
+      <div class="id"><h2>${esc(c.nome)}</h2>
+        <div class="sub">${esc(c.razao)} · CNPJ ${fmtCnpj(c.cnpj)}</div>
+        <div class="tags"><span class="tag">KA ${esc(KAS[c.ka])}</span><span class="tag">${esc(c.tip)}</span>${c.grupo?`<span class="tag">Grupo ${esc(c.grupo)}</span>`:""}<span class="tag" id="edited">${when?`Editado ${when}`:"Ainda não preenchido"}</span></div>
+      </div>
+      <div class="facts">
+        <div class="fact"><span class="k">Receita Praso</span><span class="v">${fmtBRL(c.rec)}<small style="font-weight:400;color:var(--muted)">/mês</small></span></div>
+        <div class="fact"><span class="k">Última compra</span><span class="v">${c.dias===0?"hoje":c.dias+" dias"}</span></div>
+        <div class="fact"><span class="k">Itens completos</span><span class="v" id="cliProg">${st.done}/${SKUS.length}</span></div>
+        <div class="fact"><span class="k">Potencial mapeado</span><span class="v" id="cliPot" style="color:var(--accent)">${fmtBRL(clientPot(c.id))}</span></div>
+      </div>
+      <div class="nav"><button class="btn" data-nav="-1" ${idx<=0?"disabled":""}>← Anterior</button><button class="btn primary" data-nav="1" ${idx>=vis.length-1?"disabled":""}>Próximo →</button></div>
+    </div>
+    <div class="howto">Preencha o que o cliente compra <b>fora da Praso</b>: a marca, se ela pode ser trocada, o fornecedor, o tamanho da embalagem (peso em kg, litros no óleo, latas no Red Bull), quantas embalagens ele compra por mês e quanto paga por embalagem. O painel calcula o volume e o preço por kg sozinho e soma com o que ele já compra com a gente. Salva sozinho.</div>
+  </div>
+  <div class="card"><div class="rows" id="rows">${SKUS.map((s,i)=>(i===0||SKUS[i-1].buyer!==s.buyer?`<div class="grp">Comprador ${esc(BUYERS[s.buyer])}</div>`:"")+rowHtml(c.id,i)).join("")}</div></div>`;
+  if(ent?.updatedBy){editorName(ent).then(n=>{const el=document.getElementById("edited");if(el&&n&&ui.cur===c.id)el.textContent=`Editado por ${n} · ${when}`;});}
+}
+function refreshRow(cid,i){
+  const row=document.querySelector(`.row[data-i="${i}"]`);if(!row)return;
+  row.classList.toggle("nu",!!getE(cid,i).nu);
+  row.querySelector("[data-calc]").innerHTML=calcHtml(cid,i);
+  const st=cliStats(cid);
+  const pr=document.getElementById("cliProg");if(pr)pr.textContent=`${st.done}/${SKUS.length}`;
+  const pt=document.getElementById("cliPot");if(pt)pt.textContent=fmtBRL(clientPot(cid));
+  updateRing(cid);renderStrip();
+}
+
+/* ===== Agregações ===== */
+function itemAgg(i,clients){
+  const x={i,s:SKUS[i],cli:0,nu:0,volFora:0,volPraso:0,pot:0,psum:0,pvol:0,cheaper:0,pricier:0,rTot:0,rPraso:0,tr:{sim:0,teste:0,nao:0,"":0},trVol:{sim:0,teste:0,nao:0,"":0}};
+  for(const c of clients){const r=calc(c.id,i);
+    x.volPraso+=r.volPraso;const pP=r.pb?r.pb.pkg:tablePkg(i);
+    if(r.nu){x.nu++;continue;}
+    if(!r.hasVol)continue;
+    x.rPraso+=r.volPraso*pP;x.rTot+=r.volPraso*pP;
+    x.cli++;x.volFora+=r.volFora;x.pot+=r.pot;x.rTot+=r.volFora*(r.precoU??pP);
+    if(r.precoU){x.psum+=r.precoU*r.volFora;x.pvol+=r.volFora;if(r.diff< -0.02)x.cheaper++;else if(r.diff>0.02)x.pricier++;}
+    x.tr[r.troca]++;x.trVol[r.troca]+=r.pot;}
+  return x;
+}
+function brandAgg(i,clients){
+  const m=new Map();
+  for(const c of clients){const r=calc(c.id,i);if(r.nu||!r.hasVol)continue;
+    const k=norm(r.e.marca)||"~";
+    if(!m.has(k))m.set(k,{marca:(r.e.marca||"").trim()||"Marca não informada",cli:0,vol:0,pot:0,psum:0,pvol:0,min:Infinity,max:0,emb:new Set(),forn:new Map(),tr:{sim:0,teste:0,nao:0,"":0},sab:new Map()});
+    const b=m.get(k);b.cli++;b.vol+=r.volFora;b.pot+=r.pot;b.emb.add(r.peso);b.tr[r.troca]++;
+    if(r.precoU){b.psum+=r.precoU*r.volFora;b.pvol+=r.volFora;b.min=Math.min(b.min,r.precoU);b.max=Math.max(b.max,r.precoU);}
+    if(r.e.forn&&!isPraso(r.e.forn))b.forn.set(norm(r.e.forn),r.e.forn.trim());
+    if(i===RB&&r.e.sabor)for(const sb of String(r.e.sabor).split(/[,;/]| e /).map(v=>v.trim()).filter(Boolean))b.sab.set(norm(sb),sb);}
+  return[...m.values()].sort((a,b)=>b.pot-a.pot);
+}
+function testsIn(filterFn){return Object.values(tests).filter(t=>BY_ID[t.cid]&&filterFn(t));}
+
+/* ===== Testes de marca ===== */
+function tformDefault(){const vis=visibleClients();return{cid:vis[0]?.id||"",i:0,marcaAtual:"",marcaNova:"",data:addDays(2),obs:""};}
+function prefillAtual(f){const e=getE(f.cid,f.i);f.marcaAtual=e.marca||"";return f;}
+function tformCalc(f){const r=f.cid?calc(f.cid,Number(f.i)):null;
+  return r&&r.hasVol?`Volume fora da Praso hoje: <b>${fmtVol(r.volFora,Number(f.i))}/mês</b> · potencial <b>${fmtBRL(r.pot)}/mês</b>${r.troca?` · ${TROCA_L[r.troca]}`:""}`:"Sem volume informado no mapa para este cliente e item (dá para agendar mesmo assim).";}
+function renderTests(){
+  const el=document.getElementById("view-tests");
+  if(!ui.tform)ui.tform=prefillAtual(tformDefault());
+  const f=ui.tform, vis=[...visibleClients()].sort((a,b)=>a.nome.localeCompare(b.nome));
+  if(f.cid&&!vis.find(c=>c.id===f.cid))vis.unshift(BY_ID[f.cid]);
+  datalists();
+  el.innerHTML=`<div class="card" style="margin-top:14px">
+      <div class="chead"><div class="id"><h2>Agendar teste de nova marca</h2><div class="sub">Leve ao cliente uma marca que a Praso tem e que é melhor para nós, para trazer o mix dele para cá.</div></div></div>
+      <div class="grid-form">
+        <label class="f wide"><span>Cliente</span><select id="tf-cid" data-tf="cid">${vis.map(c=>`<option value="${c.id}" ${c.id===f.cid?"selected":""}>${esc(c.nome)}${ui.ka==="all"?" · "+esc(KAS[c.ka]):""}</option>`).join("")}</select></label>
+        <label class="f"><span>Item</span><select id="tf-i" data-tf="i">${SKUS.map((s,i)=>`<option value="${i}" ${Number(f.i)===i?"selected":""}>${esc(s.nome)}</option>`).join("")}</select></label>
+        <label class="f"><span>Marca atual do cliente</span><input id="tf-ma" data-tf="marcaAtual" value="${esc(f.marcaAtual)}" list="dl-m-${f.i}" autocomplete="off"></label>
+        <label class="f"><span>Marca para testar</span><input id="tf-mn" data-tf="marcaNova" value="${esc(f.marcaNova)}" list="dl-pb-${f.i}" placeholder="Marca da Praso" autocomplete="off"></label>
+        <label class="f"><span>Data do teste</span><input id="tf-d" type="date" data-tf="data" value="${esc(f.data)}"></label>
+        <label class="f wide"><span>Observação</span><input id="tf-o" data-tf="obs" value="${esc(f.obs)}" placeholder="Ex.: levar amostra de 1 kg, falar com o chef" autocomplete="off"></label>
+        <div><button class="btn primary" id="tf-save" ${canWrite?"":"disabled"}>Agendar teste</button></div>
+      </div>
+      <div class="howto" id="tf-info">${tformCalc(f)}</div>
+    </div>
+    <div id="tlist"></div>`;
+  renderTestList();
+}
+function renderTestList(){
+  const box=document.getElementById("tlist");if(!box)return;
+  const all=testsIn(t=>ui.ka==="all"||BY_ID[t.cid].ka===ui.ka);
+  const open=all.filter(t=>OPEN_ST.has(t.status)), soon=open.filter(t=>t.data&&t.data<=addDays(7));
+  const appr=all.filter(t=>t.status==="aprovado"), rej=all.filter(t=>t.status==="reprovado");
+  const potOpen=open.reduce((s,t)=>s+(t.potEst||0),0), potWon=appr.reduce((s,t)=>s+(t.potEst||0),0);
+  const flt={open:t=>OPEN_ST.has(t.status),all:()=>true,aprovado:t=>t.status==="aprovado",reprovado:t=>t.status==="reprovado"||t.status==="cancelado"}[ui.tf];
+  const list=all.filter(flt).sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+  const late=t=>OPEN_ST.has(t.status)&&t.status==="agendado"&&t.data&&t.data<today();
+  box.innerHTML=`<div class="kpis" style="margin-top:16px">
+      <div class="kpi hl"><span class="k">Testes em aberto</span><span class="v">${open.length}</span><span class="d">${soon.length} nos próximos 7 dias</span></div>
+      <div class="kpi"><span class="k">Potencial em teste</span><span class="v">${fmtBRL(potOpen)}</span><span class="d">por mês, nos testes em aberto</span></div>
+      <div class="kpi"><span class="k">Aprovados</span><span class="v">${appr.length}</span><span class="d">${fmtBRL(potWon)}/mês convertidos</span></div>
+      <div class="kpi"><span class="k">Taxa de aprovação</span><span class="v">${appr.length+rej.length?fmtPctN(appr.length/(appr.length+rej.length)):"—"}</span><span class="d">entre testes concluídos</span></div>
+    </div>
+    <div class="toolbar" style="margin-top:16px"><div class="seg">${[["open","Em aberto"],["all","Todos"],["aprovado","Aprovados"],["reprovado","Não aprovados"]].map(([k,l])=>`<button data-tf-filter="${k}" aria-pressed="${ui.tf===k}">${l}</button>`).join("")}</div></div>
+    <div class="tbl-wrap">${list.length?`<table><thead><tr><th>Data</th><th>Cliente</th><th>Item</th><th>Marca atual → teste</th><th class="r">Potencial/mês</th><th>Status</th><th>Observação</th><th></th></tr></thead><tbody>${list.map(t=>{const i=itemIdx(t.item),c=BY_ID[t.cid];
+      return `<tr><td><input type="date" data-tdate="${t.id}" value="${esc(t.data||"")}" ${canWrite?"":"disabled"}>${late(t)?`<div class="subtle" style="color:var(--bad)">Atrasado</div>`:""}</td>
+      <td class="wrap"><b>${esc(c.nome)}</b><div class="subtle">KA ${esc(KAS[c.ka])}</div></td>
+      <td class="wrap">${i>=0?esc(SKUS[i].nome):"—"}<div class="subtle">${i>=0?"Comprador "+esc(BUYERS[SKUS[i].buyer]):""}</div></td>
+      <td class="wrap">${esc(t.marcaAtual||"—")} → <b>${esc(t.marcaNova||"—")}</b></td>
+      <td class="r">${t.potEst?fmtBRL(t.potEst):"—"}</td>
+      <td><select data-tstatus="${t.id}" ${canWrite?"":"disabled"}>${STATUS.map(([k,l])=>`<option value="${k}" ${t.status===k?"selected":""}>${l}</option>`).join("")}</select></td>
+      <td class="wrap">${esc(t.obs||"")}</td>
+      <td>${canWrite?`<button class="btn sm" data-tdel="${t.id}">Excluir</button>`:""}</td></tr>`;}).join("")}</tbody></table>`
+      :`<div class="empty">${ui.tf==="open"?"Nenhum teste em aberto. Agende o primeiro acima, ou use o botão Agendar teste na ficha do cliente.":"Nenhum teste aqui."}</div>`}</div>`;
+}
+
+/* ===== Visão do vendedor ===== */
+function renderSell(){
+  const el=document.getElementById("view-sell"), cl=visibleClients();
+  const scope=ui.ka==="all"?"Todas as carteiras":"Carteira "+KAS[ui.ka];
+  const items=SKUS.map((_,i)=>itemAgg(i,cl));
+  const pot=items.reduce((s,x)=>s+x.pot,0), rT=items.reduce((s,x)=>s+x.rTot,0), rP=items.reduce((s,x)=>s+x.rPraso,0);
+  const ks=kaStats(ui.ka);
+  const tOpen=testsIn(t=>OPEN_ST.has(t.status)&&(ui.ka==="all"||BY_ID[t.cid].ka===ui.ka));
+  const cRows=cl.map(c=>{let p=0,acc=0,acPot=0;for(let i=0;i<SKUS.length;i++){const r=calc(c.id,i);p+=r.pot;if(r.troca==="sim"||r.troca==="teste"){acc++;acPot+=r.pot;}}
+    return{c,p,acc,acPot,st:cliStats(c.id),t:Object.values(tests).filter(t=>t.cid===c.id&&OPEN_ST.has(t.status)).length};}).sort((a,b)=>b.p-a.p||b.c.rec-a.c.rec);
+  const todo=[];for(const c of cl)for(let i=0;i<SKUS.length;i++){const r=calc(c.id,i);if((r.troca==="sim"||r.troca==="teste")&&!openTest(c.id,i)&&!testsFor(c.id,i).some(t=>t.status==="aprovado"))todo.push({c,i,r});}
+  todo.sort((a,b)=>b.r.pot-a.r.pot);
+  const maxPot=Math.max(1,...items.map(x=>x.pot));
+  el.innerHTML=`<div class="toolbar" style="margin-top:14px"><p><b>${scope}</b> · O que vender e onde agir primeiro. Potencial = volume que o cliente compra fora da Praso × preço que ele paga.</p><button class="btn" data-csv="1" ${downloads?"":"hidden"}>Baixar CSV</button></div>
+    <div class="kpis">
+      <div class="kpi hl"><span class="k">Potencial de venda</span><span class="v">${fmtBRL(pot)}</span><span class="d">por mês, nos itens mapeados</span></div>
+      <div class="kpi"><span class="k">Share Praso nos itens</span><span class="v">${rT&&items.some(x=>x.cli)?fmtPctN(rP/rT):"—"}</span><span class="d">nos clientes e itens já preenchidos (R$)</span></div>
+      <div class="kpi"><span class="k">Infos preenchidas</span><span class="v">${fmtPctN(ks.pct)}</span><span class="d">${ks.done}/${ks.rows} itens completos</span></div>
+      <div class="kpi"><span class="k">Testes em aberto</span><span class="v">${tOpen.length}</span><span class="d">${todo.length} trocas aceitas ainda sem teste</span></div>
+    </div>
+    <div class="sec"><h3>Trocas aceitas sem teste agendado</h3><p class="lead">Clientes que aceitam trocar ou testar a marca e ainda não têm teste. Comece pelos de maior potencial.</p>
+      <div class="tbl-wrap">${todo.length?`<table><thead><tr><th>Cliente</th><th>Item</th><th>Marca atual</th><th class="r">Fora da Praso</th><th class="r">Potencial/mês</th><th>Aceita</th><th></th></tr></thead><tbody>${todo.slice(0,40).map(({c,i,r})=>`<tr>
+        <td class="wrap"><b>${esc(c.nome)}</b>${ui.ka==="all"?`<div class="subtle">KA ${esc(KAS[c.ka])}</div>`:""}</td><td>${esc(SKUS[i].nome)}</td><td>${esc(r.e.marca||"—")}</td>
+        <td class="r">${fmtVol(r.volFora,i)}</td><td class="r"><b>${fmtBRL(r.pot)}</b></td><td>${esc(TROCA_L[r.troca])}</td>
+        <td>${canWrite?`<button class="btn sm primary" data-agendar="${c.id}|${i}">Agendar teste</button>`:""}</td></tr>`).join("")}</tbody></table>`
+        :`<div class="empty">Aparece aqui quando o KA marcar “Aceita trocar” ou “Aceita testar” em algum item.</div>`}</div></div>
+    <div class="sec"><h3>Clientes por potencial</h3><p class="lead">Quanto cada cliente ainda compra fora da Praso nos 12 itens e quanto já está preenchido.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="r">Receita Praso</th><th class="r">Itens completos</th><th class="r">Potencial/mês</th><th class="r">Aceita trocar</th><th class="r">Testes abertos</th><th></th></tr></thead><tbody>${cRows.map(x=>`<tr>
+        <td class="wrap"><b>${esc(x.c.nome)}</b>${ui.ka==="all"?`<div class="subtle">KA ${esc(KAS[x.c.ka])}</div>`:""}</td>
+        <td class="r">${fmtBRL(x.c.rec)}</td><td class="r">${x.st.done}/${SKUS.length}</td><td class="r"><b>${x.p?fmtBRL(x.p):"—"}</b></td>
+        <td class="r">${x.acc?`${x.acc} itens · ${fmtBRL(x.acPot)}`:"—"}</td><td class="r">${x.t||"—"}</td>
+        <td><button class="btn sm" data-open="${x.c.id}">Abrir</button></td></tr>`).join("")}</tbody></table></div></div>
+    <div class="sec"><h3>Oportunidade por item</h3><p class="lead">Volume fora da Praso e quanto vale por mês, nesta carteira.</p>
+      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th class="r">Já na Praso</th><th class="r">Fora da Praso</th><th class="r">Preço médio pago</th><th class="r">Tabela Praso</th><th class="r">Mais barata / mais cara</th><th class="r">Potencial/mês</th><th></th></tr></thead><tbody>${[...items].sort((a,b)=>b.pot-a.pot).map(x=>{const pm=x.pvol?x.psum/x.pvol:null,i=x.i,u=unit(i);
+        return `<tr><td><b>${esc(x.s.nome)}</b><div class="subtle">${esc(BUYERS[x.s.buyer])} · ${x.cli} clientes c/ volume${x.nu?` · ${x.nu} não usam`:""}</div></td>
+        <td class="r">${fmtVol(x.volPraso,i)}</td><td class="r"><b>${fmtVol(x.volFora,i)}</b></td><td class="r">${pm?fmtBRL2(pm)+"/"+u:"—"}</td><td class="r">${fmtBRL2(tablePkg(i))}/${u}</td>
+        <td class="r">${x.cheaper||x.pricier?`<span style="color:var(--good)">${x.cheaper}</span> / <span style="color:var(--bad)">${x.pricier}</span>`:"—"}</td>
+        <td class="r"><b>${fmtBRL(x.pot)}</b></td><td style="width:130px"><span class="bar" style="width:${Math.round(x.pot/maxPot*110)}px"></span></td></tr>`;}).join("")}</tbody></table></div></div>`;
+}
+
+/* ===== Visão do comprador ===== */
+function renderBuy(){
+  const el=document.getElementById("view-buy"), b=ui.buyer, idxs=SKUS.map((s,i)=>s.buyer===b?i:-1).filter(i=>i>=0);
+  const items=idxs.map(i=>itemAgg(i,CLIENTS));
+  const pot=items.reduce((s,x)=>s+x.pot,0), acPot=items.reduce((s,x)=>s+x.trVol.sim+x.trVol.teste,0), naoPot=items.reduce((s,x)=>s+x.trVol.nao,0);
+  const codes=new Set(idxs.map(i=>SKUS[i].code));
+  const bt=testsIn(t=>codes.has(t.item)), bOpen=bt.filter(t=>OPEN_ST.has(t.status)), bAp=bt.filter(t=>t.status==="aprovado");
+  const sec=x=>{const i=x.i,u=unit(i),brands=brandAgg(i,CLIENTS),pm=x.pvol?x.psum/x.pvol:null;
+    const it=bt.filter(t=>t.item===SKUS[i].code);const byNew=new Map();for(const t of it){const k=t.marcaNova||"—";if(!byNew.has(k))byNew.set(k,{n:0,open:0,ap:0,rep:0});const v=byNew.get(k);v.n++;if(OPEN_ST.has(t.status))v.open++;if(t.status==="aprovado")v.ap++;if(t.status==="reprovado")v.rep++;}
+    return `<div class="itemsec"><div class="itemhead"><h3>${esc(SKUS[i].nome)}</h3>
+      <div class="mini"><span>Fora da Praso <b>${fmtVol(x.volFora,i)}/mês</b></span><span>Já na Praso <b>${fmtVol(x.volPraso,i)}/mês</b></span><span>Preço médio pago <b>${pm?fmtBRL2(pm):"—"}</b>/${u} vs tabela <b>${fmtBRL2(tablePkg(i))}</b></span><span>Aceitam trocar/testar <b>${x.tr.sim+x.tr.teste}</b> de ${x.cli}</span><span>Potencial <b>${fmtBRL(x.pot)}</b>/mês</span></div></div>
+      <div class="tbl-wrap">${brands.length?`<table><thead><tr><th>Marca que o cliente usa</th><th class="r">Clientes</th><th class="r">Volume/mês</th><th class="r">Preço médio/${u}</th><th class="r">Faixa/${u}</th><th>Embalagens</th><th>Troca (sim / testa / não)</th>${i===RB?"<th>Sabores</th>":""}<th>Fornecedores</th></tr></thead><tbody>${brands.map(m=>`<tr>
+        <td><b>${esc(m.marca)}</b></td><td class="r">${m.cli}</td><td class="r">${fmtVol(m.vol,i)}</td><td class="r">${m.pvol?fmtBRL2(m.psum/m.pvol):"—"}</td>
+        <td class="r">${m.min<Infinity?fmtBRL2(m.min)+" – "+fmtBRL2(m.max):"—"}</td>
+        <td>${[...m.emb].sort((a,c)=>a-c).map(v=>i===RB?fmtN(v,0)+" latas":fmtN(v,v<10?2:1).replace(/,00$/,"")+" "+u).join(", ")}</td>
+        <td><span style="color:var(--good)">${m.tr.sim}</span> / <span style="color:var(--warn)">${m.tr.teste}</span> / <span style="color:var(--bad)">${m.tr.nao}</span>${m.tr[""]?` <span class="subtle">· ${m.tr[""]} sem resposta</span>`:""}</td>
+        ${i===RB?`<td class="wrap">${esc([...m.sab.values()].join(", ")||"—")}</td>`:""}
+        <td class="wrap">${esc([...m.forn.values()].join(", ")||"—")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Ainda sem volume informado pelos KAs.</div>`}</div>
+      ${sugHtml(i)}${antHint(i)}
+      ${byNew.size?`<p class="hint" style="margin-top:8px">Testes por marca proposta: ${[...byNew].map(([k,v])=>`<b>${esc(k)}</b> ${v.n} (${v.open} em aberto, ${v.ap} aprovados${v.rep?`, ${v.rep} não aprovados`:""})`).join(" · ")}</p>`:""}</div>`;};
+  el.innerHTML=`<div class="toolbar" style="margin-top:14px"><p><b>Comprador ${esc(BUYERS[b])}</b> · Todas as carteiras. Volume somado por marca para negociar com a indústria e decidir qual marca empurrar nos testes.</p><button class="btn" data-csv="1" ${downloads?"":"hidden"}>Baixar CSV</button></div>
+    <div class="kpis">
+      <div class="kpi hl"><span class="k">Potencial dos 3 itens</span><span class="v">${fmtBRL(pot)}</span><span class="d">por mês, fora da Praso</span></div>
+      <div class="kpi"><span class="k">Aceita trocar ou testar</span><span class="v">${fmtBRL(acPot)}</span><span class="d">${fmtBRL(naoPot)}/mês em marca fixa</span></div>
+      <div class="kpi"><span class="k">Testes em aberto</span><span class="v">${bOpen.length}</span><span class="d">${bAp.length} aprovados até agora</span></div>
+      <div class="kpi"><span class="k">Infos preenchidas</span><span class="v">${fmtPctN(kaStats("all").pct)}</span><span class="d">total das 4 carteiras</span></div>
+    </div>${items.map(sec).join("")}`;
+}
+
+function sugHtml(i){const man=[],auto=new Map();
+  for(const c of CLIENTS){const e=getE(c.id,i);if(e.sug&&String(e.sug).trim())man.push({c,e});const o=(e.nu||e.jc)?autoSugs(c.id)[i]:null;if(o&&!(e.sug&&String(e.sug).trim()))auto.set(o.label,(auto.get(o.label)||0)+1);}
+  if(!man.length&&!auto.size)return "";
+  return `<p class="hint" style="margin-top:8px"><b>Sugestões de SKU</b> para quem já compra ou não usa este item: ${[...auto].sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${esc(k)} (${n} automática${n>1?"s":""})`).join(" · ")}${man.length?`${auto.size?" · ":""}${man.map(({c,e})=>`${esc(e.sug)} <span class="subtle">(KA ${esc(KAS[c.ka])} · ${esc(c.nome)})</span>`).join(" · ")}`:""}</p>`;}
+function antHint(i){const l=Object.values(ants).filter(a=>a.item===SKUS[i].code);if(!l.length)return "";
+  let vol=0;const br=new Map();for(const a of l){const r=antCalc(a);vol+=r.vol;const k=(a.marca||"").trim()||"marca não informada";br.set(k,(br.get(k)||0)+1);}
+  return `<p class="hint" style="margin-top:8px"><b>Antecipado fora da base:</b> ${l.length} clientes, ${fmtVol(vol,i)}/mês · ${[...br].map(([k,n])=>`${esc(k)} (${n})`).join(", ")}</p>`;}
+
+/* ===== Antecipar ===== */
+function antCalc(a){const i=itemIdx(a.item),peso=parseNum(a.peso),qtd=parseNum(a.qtd),preco=parseNum(a.preco);
+  const vol=peso>0&&qtd>0?peso*qtd:0,pu=preco>0&&peso>0?preco/peso:null;return{i,vol,pu,pot:vol*(pu??(i>=0?tablePkg(i):0))};}
+function aformDefault(){return{nome:"",cnpj:"",tip:"",ka:ui.ka!=="all"?ui.ka:"",i:0,marca:"",troca:"",sabor:"",forn:"",peso:"",qtd:"",preco:"",obs:""};}
+async function saveAnt(a){
+  if(!db||!canWrite)return false;a.updatedAt=new Date().toISOString();a.updatedBy=myId||"";ants[a.id]={...a};tSaving++;setStatus();
+  try{const {id,...body}=a;await db.collection("antecipar").doc(a.id).set(body);errState=false;return true;}
+  catch(err){if(err&&(err.code==="invalid_argument"||err.code==="permission_denied"||err.code==="not_granted"))readOnly();else errState=true;return false;}
+  finally{tSaving--;setStatus();}}
+async function deleteAnt(id){if(!db||!canWrite)return;delete ants[id];tSaving++;setStatus();
+  try{await db.collection("antecipar").doc(id).delete();}catch(e){errState=true;}finally{tSaving--;setStatus();}}
+function aformBody(){const f=ui.aform,i=Number(f.i),dis=canWrite?"":"disabled";
+  const inp=(k,l,attrs="",cls="")=>`<label class="f ${cls}"><span>${l}</span><input data-af="${k}" value="${esc(f[k])}" autocomplete="off" ${attrs} ${dis}></label>`;
+  return `<div class="grid-form">
+    ${inp("nome","Cliente (nome)",`placeholder="Ex.: Pizzaria do Zé"`,"wide")}
+    ${inp("cnpj","CNPJ (se souber)",`inputmode="numeric"`)}
+    <label class="f"><span>Tipologia</span><select data-af="tip" ${dis}><option value="">Selecione</option>${Object.keys(TIP).sort((a,b)=>a.localeCompare(b)).map(t=>`<option ${f.tip===t?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
+    <label class="f"><span>KA que mapeou</span><select data-af="ka" ${dis}><option value="">Selecione</option>${KA_ORDER.map(k=>`<option value="${k}" ${f.ka===k?"selected":""}>${KAS[k]}</option>`).join("")}</select></label>
+    <label class="f"><span>Item</span><select data-af="i" ${dis}>${SKUS.map((s,j)=>`<option value="${j}" ${i===j?"selected":""}>${esc(s.nome)}</option>`).join("")}</select></label>
+    ${inp("marca","Marca que usa",`list="dl-m-${i}"`)}
+    <label class="f"><span>Marca pode ser trocada?</span><select data-af="troca" ${dis}><option value="">Selecione</option>${TROCA.map(([k,l])=>`<option value="${k}" ${f.troca===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    ${i===RB?inp("sabor","Sabor(es)",`list="dl-sabor"`):""}
+    ${inp("forn","Fornecedor atual",`list="dl-forn"`)}
+    ${inp("peso",embLabel(i),`inputmode="decimal" placeholder="${i===RB?"Ex.: 24":"Ex.: 2,1"}"`,"n")}
+    ${inp("qtd","Embalagens/mês",`inputmode="decimal"`,"n")}
+    ${inp("preco","Preço da embalagem (R$)",`inputmode="decimal"`,"n")}
+    ${inp("obs","Observação",`placeholder="Ex.: contato, endereço, quem decide"`,"wide")}
+    <div><button class="btn primary" id="af-save" ${dis}>Salvar mapeamento</button></div>
+  </div>
+  <div class="howto" id="af-info">${aInfo()}</div>`;}
+function aInfo(){const f=ui.aform,i=Number(f.i),r=antCalc({...f,item:SKUS[i].code});
+  return `${r.vol?`Volume: <b>${fmtVol(r.vol,i)}/mês</b>${r.pu?` · paga <b>${fmtBRL2(r.pu)}/${unit(i)}</b>`:""} · potencial <b>${fmtBRL(r.pot)}/mês</b>`:"Preencha embalagem e embalagens/mês para calcular o potencial."}${f.tip?tipLine(f.tip,i):""}`;}
+function renderAnt(){
+  const el=document.getElementById("view-ant");if(!ui.aform)ui.aform=aformDefault();datalists();
+  el.innerHTML=`<div class="card" style="margin-top:14px">
+    <div class="chead"><div class="id"><h2>Antecipar mix de outro cliente</h2><div class="sub">Viu sem querer o mix de um cliente que não está na sua lista? Registre aqui para não perder a informação.</div></div></div>
+    <div id="aform">${aformBody()}</div></div><div id="alist"></div>`;
+  renderAntList();}
+function renderAntList(){const box=document.getElementById("alist");if(!box)return;
+  const l=Object.values(ants).filter(a=>ui.ka==="all"||a.ka===ui.ka).sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+  const cli=new Set(l.map(a=>norm(a.nome)+"|"+(a.cnpj||""))).size, pot=l.reduce((s,a)=>s+antCalc(a).pot,0), acc=l.filter(a=>a.troca==="sim"||a.troca==="teste").length;
+  box.innerHTML=`<div class="kpis" style="margin-top:16px">
+    <div class="kpi hl"><span class="k">Potencial antecipado</span><span class="v">${fmtBRL(pot)}</span><span class="d">por mês</span></div>
+    <div class="kpi"><span class="k">Clientes</span><span class="v">${cli}</span><span class="d">fora da base dos top 30</span></div>
+    <div class="kpi"><span class="k">Itens mapeados</span><span class="v">${l.length}</span><span class="d">${acc} aceitam trocar ou testar</span></div>
+    <div class="kpi"><span class="k">Escopo</span><span class="v" style="font-size:16px">${ui.ka==="all"?"Todos os KAs":"KA "+esc(KAS[ui.ka])}</span><span class="d">use os filtros acima</span></div></div>
+    <div class="tbl-wrap" style="margin-top:16px">${l.length?`<table><thead><tr><th>Cliente</th><th>Item</th><th>Marca · fornecedor</th><th class="r">Volume/mês</th><th class="r">Paga</th><th class="r">Potencial/mês</th><th>Troca</th><th>Obs.</th><th></th></tr></thead><tbody>${l.map(a=>{const r=antCalc(a),i=r.i;
+      return `<tr><td class="wrap"><b>${esc(a.nome)}</b><div class="subtle">${esc(a.tip||"Sem tipologia")}${a.cnpj?" · "+esc(fmtCnpj(String(a.cnpj).replace(/\D/g,""))):""}${a.ka?" · KA "+esc(KAS[a.ka]):""}</div></td>
+      <td>${i>=0?esc(SKUS[i].nome):"—"}${i===RB&&a.sabor?`<div class="subtle">${esc(a.sabor)}</div>`:""}</td>
+      <td class="wrap">${esc(a.marca||"—")}${a.forn?` · ${esc(a.forn)}`:""}</td>
+      <td class="r">${r.vol&&i>=0?fmtVol(r.vol,i):"—"}</td><td class="r">${r.pu&&i>=0?fmtBRL2(r.pu)+"/"+unit(i):"—"}</td><td class="r"><b>${r.pot?fmtBRL(r.pot):"—"}</b></td>
+      <td>${trocaChip(a.troca)||"—"}</td><td class="wrap">${esc(a.obs||"")}</td>
+      <td>${canWrite?`<button class="btn sm" data-adel="${a.id}">Excluir</button>`:""}</td></tr>`;}).join("")}</tbody></table>`:`<div class="empty">Nada antecipado ainda.</div>`}</div>`;}
+
+/* ===== CSV ===== */
+function csv(){
+  const head=["KA","Cliente","Razão social","CNPJ","Comprador","Item","Marca","Troca de marca","Sabor","Fornecedor atual","Embalagem","Unidade","Embalagens/mês","Preço embalagem (R$)","Não usa","Já compra conosco","Tendência na Praso","Sugestão de SKU","Volume fora/mês","Preço por unidade (R$)","Volume Praso/mês","Potencial R$/mês","Teste em aberto"];
+  const lines=[head];
+  for(const c of CLIENTS){for(let i=0;i<SKUS.length;i++){const r=calc(c.id,i);if(!rowInfo(c.id,i).have)continue;const ot=openTest(c.id,i);
+    lines.push([KAS[c.ka],c.nome,c.razao,c.cnpj,BUYERS[SKUS[i].buyer],SKUS[i].nome,r.e.marca||"",TROCA_L[r.e.troca]||"",r.e.sabor||"",r.e.forn||"",r.peso>0?fmtN(r.peso,2):"",unit(i),r.qtd>0?fmtN(r.qtd,1):"",r.preco>0?fmtN(r.preco,2):"",r.e.nu?"sim":"",r.e.jc?"sim":"",trend(c.id,i)?.l||"",r.e.sug||((r.e.nu||r.e.jc)?(autoSugs(c.id)[i]?.label||""):""),fmtN(r.volFora,1),r.precoU?fmtN(r.precoU,2):"",fmtN(r.volPraso,1),fmtN(r.pot,2),ot?`${ot.marcaNova} ${fmtDate(ot.data)}`:""]);}}
+  return "\ufeff"+lines.map(l=>l.map(v=>{v=String(v);return /[;"\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;}).join(";")).join("\n");
+}
+
+/* ===== Eventos ===== */
+function startTest(cid,i){ui.tform=prefillAtual({cid,i:Number(i),marcaAtual:"",marcaNova:"",data:addDays(2),obs:""});setView("tests");window.scrollTo({top:0});}
+document.addEventListener("click",async ev=>{
+  const t=ev.target.closest("button");if(!t)return;
+  if(t.dataset.view){setView(t.dataset.view);return;}
+  if(t.dataset.ka){ui.ka=t.dataset.ka;if(ui.view==="buy")ui.view="sell";saveUi();ui.cur=ui.view==="fill"?null:ui.cur;if(ui.tform&&ui.view==="tests"&&ui.ka!=="all"&&BY_ID[ui.tform.cid]?.ka!==ui.ka)ui.tform=null;setView(ui.view);return;}
+  if(t.dataset.buyer){ui.buyer=Number(t.dataset.buyer);saveUi();renderSegs();renderBuy();return;}
+  if(t.dataset.cid){ui.cur=t.dataset.cid;saveUi();renderList();renderPanel();if(window.innerWidth<900)document.getElementById("panel").scrollIntoView({block:"start"});return;}
+  if(t.dataset.open){ui.cur=t.dataset.open;if(ui.ka!=="all"&&BY_ID[ui.cur].ka!==ui.ka)ui.ka="all";setView("fill");window.scrollTo({top:0});return;}
+  if(t.dataset.nav){const vis=visibleClients();const idx=vis.findIndex(x=>x.id===ui.cur);const n=vis[idx+Number(t.dataset.nav)];
+    if(n){ui.cur=n.id;saveUi();renderList();renderPanel();const a=document.querySelector(`[data-cid="${n.id}"]`);a&&a.scrollIntoView({block:"nearest"});window.scrollTo({top:0});}return;}
+  if(t.dataset.agendar){const[cid,i]=t.dataset.agendar.split("|");startTest(cid,i);return;}
+  if(t.dataset.tfFilter){ui.tf=t.dataset.tfFilter;renderTestList();return;}
+  if(t.dataset.tdel){if(t.dataset.armed){deleteTest(t.dataset.tdel);renderTestList();}else{t.dataset.armed="1";t.textContent="Confirmar";setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent="Excluir";}},3000);}return;}
+  if(t.id==="tf-save"){const f=ui.tform;
+    if(!f.cid||!String(f.marcaNova).trim()||!f.data){showNotice("Para agendar, escolha o cliente, a marca para testar e a data.");return;}
+    const i=Number(f.i), r=calc(f.cid,i);
+    const rec={id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),cid:f.cid,ka:BY_ID[f.cid].ka,item:SKUS[i].code,marcaAtual:String(f.marcaAtual).trim(),marcaNova:String(f.marcaNova).trim(),data:f.data,status:"agendado",obs:String(f.obs).trim(),volEst:r.volFora||0,potEst:r.pot||0,createdAt:new Date().toISOString(),createdBy:myId||""};
+    t.disabled=true;const ok=await saveTest(rec);t.disabled=false;
+    if(ok){document.getElementById("notice").hidden=true;ui.tform={...prefillAtual({...tformDefault(),cid:f.cid,i}),marcaNova:""};ui.tf="open";renderTests();}
+    return;}
+  if(t.id==="af-save"){const f=ui.aform;
+    if(!String(f.nome).trim()){showNotice("Para salvar, informe pelo menos o nome do cliente.");return;}
+    const i=Number(f.i);const rec={id:"a"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nome:String(f.nome).trim(),cnpj:String(f.cnpj).trim(),tip:f.tip,ka:f.ka,item:SKUS[i].code,
+      marca:String(f.marca).trim(),troca:f.troca,sabor:i===RB?String(f.sabor).trim():"",forn:String(f.forn).trim(),peso:f.peso,qtd:f.qtd,preco:f.preco,obs:String(f.obs).trim(),createdAt:new Date().toISOString(),createdBy:myId||""};
+    t.disabled=true;const ok=await saveAnt(rec);t.disabled=false;
+    if(ok){document.getElementById("notice").hidden=true;ui.aform={...aformDefault(),nome:f.nome,cnpj:f.cnpj,tip:f.tip,ka:f.ka};renderAnt();}
+    return;}
+  if(t.dataset.adel){if(t.dataset.armed){deleteAnt(t.dataset.adel);renderAntList();}else{t.dataset.armed="1";t.textContent="Confirmar";setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent="Excluir";}},3000);}return;}
+  if(t.dataset.csv&&downloads){const u=URL.createObjectURL(new Blob([csv()],{type:"text/csv;charset=utf-8"}));const a=document.createElement("a");a.href=u;a.download="mapa-share-ka-ce.csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);}
+});
+function onField(ev){
+  const inp=ev.target; const f=inp.dataset?.f; if(!f)return;
+  const row=inp.closest(".row"); if(!row)return;
+  const i=Number(row.dataset.i), cid=ui.cur, code=SKUS[i].code;
+  if(!entries[cid])entries[cid]={itens:{}};
+  if(!entries[cid].itens)entries[cid].itens={};
+  const cur={...(entries[cid].itens[code]||{})};
+  cur[f]=(f==="nu"||f==="jc")?inp.checked:inp.value;
+  if(f==="nu"&&inp.checked)cur.jc=false;
+  if(f==="jc"&&inp.checked)cur.nu=false;
+  entries[cid].itens={...entries[cid].itens,[code]:cur};
+  if(f==="nu"||f==="jc"){const y=window.scrollY;renderPanel();window.scrollTo({top:y});renderStrip();updateRing(cid);scheduleSave(cid);return;}
+  refreshRow(cid,i); scheduleSave(cid);
+}
+const panel=document.getElementById("panel");
+panel.addEventListener("input",e=>{if(e.target.type!=="checkbox")onField(e);});
+panel.addEventListener("change",e=>{if(e.target.type==="checkbox")onField(e);});
+const tv=document.getElementById("view-tests");
+const av=document.getElementById("view-ant");
+function onAf(e){const k=e.target.dataset?.af;if(!k||!ui.aform)return;ui.aform[k]=e.target.value;
+  if(k==="i"){const box=document.getElementById("aform");if(box){box.innerHTML=aformBody();}return;}
+  const inf=document.getElementById("af-info");if(inf)inf.innerHTML=aInfo();}
+av.addEventListener("input",onAf);av.addEventListener("change",e=>{if(e.target.tagName==="SELECT")onAf(e);});
+function onTf(e){const k=e.target.dataset?.tf;if(!k||!ui.tform)return;ui.tform[k]=e.target.value;
+  if(k==="cid"||k==="i"){prefillAtual(ui.tform);const ma=document.getElementById("tf-ma");if(ma){ma.value=ui.tform.marcaAtual;ma.setAttribute("list","dl-m-"+ui.tform.i);}
+    const mn=document.getElementById("tf-mn");if(mn)mn.setAttribute("list","dl-pb-"+ui.tform.i);}
+  const inf=document.getElementById("tf-info");if(inf)inf.innerHTML=tformCalc(ui.tform);}
+tv.addEventListener("input",onTf);tv.addEventListener("change",async e=>{onTf(e);
+  const s=e.target.dataset?.tstatus, d=e.target.dataset?.tdate;
+  if(s&&tests[s]){await saveTest({...tests[s],status:e.target.value});renderTestList();renderStrip();}
+  if(d&&tests[d]&&e.target.value){await saveTest({...tests[d],data:e.target.value});renderTestList();}});
+document.getElementById("q").addEventListener("input",e=>{ui.q=e.target.value;renderList();});
+window.addEventListener("beforeunload",()=>{for(const cid of [...dirty]){clearTimeout(timers[cid]);flush(cid);}});
+
+/* ===== Supabase: banco, login e tempo real ===== */
+const SB_URL="https://cpyxwzsrvhzljjpgbfmv.supabase.co";
+const SB_KEY="sb_publishable_ziDQVr-2LkrSpKjuhmOFyg_rACCvVpR";
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}});
+const okDomain=e=>/@praso\.com\.br$/i.test(String(e||"").trim());
+function mapErr(e){const c=String(e?.code||"");return Object.assign(new Error(e?.message||"erro"),{code:(c==="42501"||/row-level security|permission/i.test(e?.message||""))?"permission_denied":c||"erro"});}
+function makeDb(){return{collection(name){return{
+  doc(id){return{
+    async set(body){const {error}=await sb.from(name).upsert({id,body,updated_at:new Date().toISOString(),updated_by:myId});if(error)throw mapErr(error);},
+    async delete(){const {error}=await sb.from(name).delete().eq("id",id);if(error)throw mapErr(error);}};},
+  onSnapshot(cb,errcb){let t=null,fails=0;
+    const load=async()=>{const {data,error}=await sb.from(name).select("id,body");
+      if(error){if(++fails>=3&&errcb)errcb(error);return;}fails=0;cb({docs:(data||[]).map(r=>({id:r.id,data:()=>r.body}))});};
+    load();
+    sb.channel("rt-"+name).on("postgres_changes",{event:"*",schema:"public",table:name},()=>{clearTimeout(t);t=setTimeout(load,250);}).subscribe();
+    setInterval(load,60000);}};}};}
+function makeUser(u){const cache={};return{
+  id:async()=>u.id,
+  can:async()=>true,
+  profiles:async(ids)=>{const need=ids.filter(i=>i&&!(i in cache));
+    if(need.length){const {data}=await sb.from("perfis").select("id,nome,email").in("id",need.filter(x=>/^[0-9a-f-]{36}$/i.test(x)));for(const p of data||[])cache[p.id]={name:p.nome||p.email};for(const i of need)if(!(i in cache))cache[i]=null;}
+    return Object.fromEntries(ids.map(i=>[i,cache[i]]));}};}
+
+/* ===== Início ===== */
+renderSegs(); setView(ui.view); setStatus();
+const gate=document.getElementById("gate"), gMsg=document.getElementById("gMsg");
+document.getElementById("gGoogle").onclick=async()=>{gMsg.textContent="Abrindo o Google…";
+  const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname,queryParams:{hd:"praso.com.br",prompt:"select_account"}}});
+  if(error)gMsg.textContent="Login com Google ainda não está ativo. Use o link por e-mail.";};
+document.getElementById("gLink").onclick=async()=>{const em=document.getElementById("gEmail").value.trim();
+  if(!okDomain(em)){gMsg.textContent="Use um e-mail @praso.com.br.";return;}
+  gMsg.textContent="Enviando…";
+  const {error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});
+  gMsg.textContent=error?("Não deu para enviar agora: "+error.message):"Pronto! Abra o link que chegou no seu e-mail.";};
+document.getElementById("logout").onclick=async()=>{await sb.auth.signOut();location.reload();};
+
+let started=false;
+async function start(session){
+  if(started)return;
+  const u=session?.user;
+  if(!u){gate.hidden=false;return;}
+  if(!okDomain(u.email)){gate.hidden=false;gMsg.textContent="Este painel é só para e-mails @praso.com.br.";await sb.auth.signOut();return;}
+  started=true;gate.hidden=true;
+  const nome=u.user_metadata?.full_name||u.user_metadata?.name||u.email.split("@")[0];
+  document.getElementById("userName").textContent=nome;document.getElementById("userbox").hidden=false;
+  try{await sb.from("perfis").upsert({id:u.id,nome,email:u.email,updated_at:new Date().toISOString()});}catch(e){}
+  downloads=true;
+  userApi=makeUser(u);myId=u.id;
+  db=makeDb();dbTried=true;setStatus();renderView();
+  const busy=()=>{const a=document.activeElement;return a&&(panel.contains(a)||tv.contains(a)||av.contains(a))&&/INPUT|SELECT|TEXTAREA/.test(a.tagName);};
+  let first=true;
+  db.collection("mapa").onSnapshot(snap=>{
+    let curChanged=false;
+    for(const d of snap.docs){const cid=d.id; if(!BY_ID[cid]||dirty.has(cid)||saving[cid])continue;
+      const data=d.data()||{}; const prev=entries[cid];
+      if(!prev||prev.updatedAt!==data.updatedAt){entries[cid]={itens:data.itens||{},updatedAt:data.updatedAt,updatedBy:data.updatedBy};if(cid===ui.cur)curChanged=true;}}
+    renderStrip();
+    if(ui.view==="fill"){renderList();if(first||(curChanged&&!busy()))renderPanel();}
+    else if(ui.view==="tests"){if(!busy())renderTests();}
+    else renderView();
+    first=false;
+  },err=>{showNotice("A conexão com os dados caiu. Recarregue a página para continuar salvando.");db=null;setStatus();});
+  db.collection("antecipar").onSnapshot(snap=>{
+    const next={};for(const d of snap.docs)next[d.id]={...(d.data()||{}),id:d.id};ants=next;
+    if(ui.view==="ant")renderAntList();else if(ui.view==="buy")renderBuy();
+  },err=>{});
+  db.collection("testes").onSnapshot(snap=>{
+    const next={};for(const d of snap.docs)next[d.id]={...(d.data()||{}),id:d.id};tests=next;
+    if(ui.view==="tests")renderTestList();
+    else if(ui.view==="fill"){if(!busy())renderPanel();}
+    else renderView();
+  },err=>{});
+}
+sb.auth.getSession().then(({data})=>start(data.session));
+sb.auth.onAuthStateChange((ev,session)=>{if(session)start(session);});
+</script>
+
+</body></html>
